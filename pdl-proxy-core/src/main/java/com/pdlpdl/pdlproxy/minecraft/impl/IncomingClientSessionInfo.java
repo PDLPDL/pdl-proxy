@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2021 Playful Digital Learning LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.pdlpdl.pdlproxy.minecraft.impl;
+
+import com.github.steveice10.packetlib.Session;
+import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
+import com.pdlpdl.pdlproxy.minecraft.ProxyPacketListener;
+
+import java.util.function.BiConsumer;
+
+class IncomingClientSessionInfo {
+    private final String username;
+    private final ProxyClientSessionAdapter proxyClientSessionAdapter;
+    private final Session clientSession;
+    private final ProxyPacketListener proxyPacketReceivedListener;
+    private final ProxyPacketListener proxyPacketSentListener;
+    private final BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener;
+
+//========================================
+// Constructor
+//----------------------------------------
+
+    public IncomingClientSessionInfo(String username,
+                                     ProxyClientSessionAdapter proxyClientSessionAdapter,
+                                     Session clientSession,
+                                     ProxyPacketListener proxyPacketReceivedListener,
+                                     ProxyPacketListener proxyPacketSentListener,
+                                     BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener
+                                     ) {
+
+        this.username = username;
+        this.proxyClientSessionAdapter = proxyClientSessionAdapter;
+        this.clientSession = clientSession;
+        this.proxyPacketReceivedListener = proxyPacketReceivedListener;
+        this.proxyPacketSentListener = proxyPacketSentListener;
+        this.onDisconnectListener = onDisconnectListener;
+    }
+
+
+//========================================
+// Getters
+//----------------------------------------
+
+    public String getUsername() {
+        return username;
+    }
+
+    public ProxyClientSessionAdapter getProxyClientSessionAdapter() {
+        return proxyClientSessionAdapter;
+    }
+
+    public Session getClientSession() {
+        return clientSession;
+    }
+
+    public ProxyPacketListener getProxyPacketReceivedListener() {
+        return proxyPacketReceivedListener;
+    }
+
+    public ProxyPacketListener getProxyPacketSentListener() {
+        return proxyPacketSentListener;
+    }
+
+    public BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> getOnDisconnectListener() {
+        return onDisconnectListener;
+    }
+}
