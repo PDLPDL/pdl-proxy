@@ -18,6 +18,15 @@ limitations under the License.
 
 Please see the LICENSE file.
 
+# Intended Usage
+
+While Playful Digital Learning provides this software as opensource for your enjoyment, it is intended for use in
+building advanced features for Minecraft, such as programmable BOTs, for user's enjoyment.
+
+Please refrain from attempting to using this software to implement cheats.  Also, please obtain permission from
+server owners before connecting this proxy to their servers.
+
+
 # PDL-PROXY
 
 Playful Digital Learning brings this Minecraft Proxy Server that provides functionality on top of the normal Minecraft
