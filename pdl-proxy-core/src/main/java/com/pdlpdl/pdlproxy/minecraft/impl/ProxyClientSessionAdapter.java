@@ -179,6 +179,8 @@ public class ProxyClientSessionAdapter implements SessionListener {
                                 this::handleDownstreamDisconnect
                                 );
 
+                // TODO: better make this run asynchronously
+                // TODO: otherwise delays connecting to the downstream server can timeout the client connection
                 DownstreamServerConnection newConnection =  this.startProxyServerSession.apply(incomingClientSessionInfo);
 
                 // Double-check that we didn't shutdown between the check above and now, to minimize the impact of

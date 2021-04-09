@@ -36,6 +36,10 @@ public class PhantomBeeSessionInterceptor implements SessionInterceptor {
     }
 
     @Override
+    public void onDownstreamConnected(Session session, String inGameName) {
+    }
+
+    @Override
     public void onSessionRemoved(Session removedSession, PacketInterceptorControl packetInterceptorControl) {
 
     }

@@ -224,11 +224,20 @@ public class ProxyServerImpl implements ProxyServer {
 //----------------------------------------
 
     private DownstreamServerConnection connectDownstream(IncomingClientSessionInfo incomingClientSessionInfo) {
-        return this.downstreamServerConnectionFactory.connect(
-                incomingClientSessionInfo.getUsername(),
-                incomingClientSessionInfo.getProxyPacketReceivedListener(),
-                incomingClientSessionInfo.getProxyPacketSentListener(),
-                incomingClientSessionInfo.getOnDisconnectListener());
+        DownstreamServerConnection result =
+                this.downstreamServerConnectionFactory.connect(
+                        incomingClientSessionInfo.getUsername(),
+                        incomingClientSessionInfo.getProxyPacketReceivedListener(),
+                        incomingClientSessionInfo.getProxyPacketSentListener(),
+                        incomingClientSessionInfo.getOnDisconnectListener());
+
+        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+            sessionInterceptor.onDownstreamConnected(
+                    incomingClientSessionInfo.getClientSession(),
+                    incomingClientSessionInfo.getUsername());
+        }
+
+        return result;
     }
 
     private void shutdownClientSessions() {

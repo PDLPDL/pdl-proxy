@@ -23,12 +23,20 @@ import com.github.steveice10.packetlib.Session;
  */
 public interface SessionInterceptor {
     /**
-     * Notification when a Player session is added to the Proxy.
+     * Notification when a Player session is added to the Proxy, and before a paired downstream connection is created.
      *
      * @param addedSession new session being added.
      * @param packetInterceptorControl control which can be used to adjust the interceptors on the session.
      */
     void onSessionAdded(Session addedSession, PacketInterceptorControl packetInterceptorControl);
+
+    /**
+     * Notification when the downstream Session (Proxy-to-downstream-server) is created for the session.
+     *
+     * @param session Minecraft session from the client to the Proxy server.
+     * @param inGameName name used in-game for the player.
+     */
+    void onDownstreamConnected(Session session, String inGameName);
 
     /**
      * Notification when a Player session is removed from the proxy.
