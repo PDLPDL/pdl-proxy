@@ -6,17 +6,17 @@ import com.artnaseef.immutable.utils.MutationUtilsImmutableProperties;
 public class MinecraftGameState {
     public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, null);
 
-    private final long playerEntityId;
+    private final int playerEntityId;
     private final Position playerPosition;
     private final Rotation playerRotation;
 
-    public MinecraftGameState(long playerEntityId, Position playerPosition, Rotation playerRotation) {
+    public MinecraftGameState(int playerEntityId, Position playerPosition, Rotation playerRotation) {
         this.playerEntityId = playerEntityId;
         this.playerPosition = playerPosition;
         this.playerRotation = playerRotation;
     }
 
-    public long getPlayerEntityId() {
+    public int getPlayerEntityId() {
         return playerEntityId;
     }
 
