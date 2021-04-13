@@ -38,6 +38,7 @@
 
 
         <commons-cli.version>1.4</commons-cli.version>
+        <immutable-utils.version>1.0.0-SNAPSHOT</immutable-utils.version> <!-- TBD: release -->
         <minecraft-protocol-lib.version>1.16.4-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
         <packetlib.version>1.7</packetlib.version>
@@ -51,6 +52,7 @@
         <module>pdl-proxy-main</module>
 
         <module>pdl-proxy-tracing-interceptor</module>
+        <module>pdl-proxy-gamestate-tracking-interceptor</module>
     </modules>
 
     <dependencyManagement>
@@ -122,6 +124,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport</artifactId>
                 <version>${netty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.artnaseef</groupId>
+                <artifactId>immutable-utils</artifactId>
+                <version>${immutable-utils.version}</version>
             </dependency>
 
             <dependency>
