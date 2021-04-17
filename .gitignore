@@ -2,3 +2,5 @@
 target
 /tools
 /misc
+traces
+trace.d
