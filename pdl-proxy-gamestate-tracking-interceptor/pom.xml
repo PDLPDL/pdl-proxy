@@ -53,6 +53,18 @@
             <groupId>com.github.Steveice10</groupId>
             <artifactId>MCProtocolLib</artifactId>
         </dependency>
+
+        <!-- UNIT TESTING -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

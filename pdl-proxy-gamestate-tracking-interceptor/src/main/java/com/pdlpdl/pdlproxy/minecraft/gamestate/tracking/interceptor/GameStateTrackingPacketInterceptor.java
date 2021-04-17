@@ -65,7 +65,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
     //
     // RUNTIME STATE
     //
-    private MinecraftGameState minecraftGameState = new MinecraftGameState(-1, null, null);
+    private MinecraftGameState minecraftGameState = new MinecraftGameState(-1, null, true, null);
 
 
 //========================================
@@ -116,7 +116,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
             );
 
             this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerPosition(this.minecraftGameState, newPosition);
+                    this.minecraftGameStateMutationUtils.updatePlayerPosition(this.minecraftGameState, newPosition, clientPlayerPositionPacket.isOnGround());
         } else if (clientPacket instanceof ClientPlayerRotationPacket) {
             ClientPlayerRotationPacket clientPlayerRotationPacket = (ClientPlayerRotationPacket) clientPacket;
 
@@ -127,7 +127,11 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
             );
 
             this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerRotation(this.minecraftGameState, newRotation);
+                    this.minecraftGameStateMutationUtils.updatePlayerRotation(
+                            this.minecraftGameState,
+                            newRotation,
+                            clientPlayerRotationPacket.isOnGround()
+                    );
         } else if (clientPacket instanceof ClientPlayerPositionRotationPacket) {
             ClientPlayerPositionRotationPacket clientPlayerPositionRotationPacket =
                     (ClientPlayerPositionRotationPacket) clientPacket;
@@ -144,7 +148,12 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
             );
 
             this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerPositionRotation(this.minecraftGameState, newPosition, newRotation);
+                    this.minecraftGameStateMutationUtils
+                            .updatePlayerPositionRotation(
+                                    this.minecraftGameState,
+                                    newPosition,
+                                    newRotation,
+                                    clientPlayerPositionRotationPacket.isOnGround());
         }
     }
 
@@ -167,7 +176,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
             );
 
             this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerPositionRotation(this.minecraftGameState, newPosition, newRotation);
+                    this.minecraftGameStateMutationUtils.updatePlayerPositionRotation(this.minecraftGameState, newPosition, newRotation, null);
         } else if (serverPacket instanceof ServerJoinGamePacket) {
             ServerJoinGamePacket serverJoinGamePacket = (ServerJoinGamePacket) serverPacket;
 

@@ -2,18 +2,20 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
 import com.artnaseef.immutable.utils.MutationUtilsImmutableProperties;
 
-@MutationUtilsImmutableProperties(properties = {"playerEntityId", "playerPosition", "playerRotation"})
+@MutationUtilsImmutableProperties(properties = {"playerEntityId", "playerPosition", "playerIsOnGround", "playerRotation"})
 public class MinecraftGameState {
-    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, null);
+    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, true, null);
 
     private final int playerEntityId;
     private final Position playerPosition;
+    private final boolean playerIsOnGround;
     private final Rotation playerRotation;
 
-    public MinecraftGameState(int playerEntityId, Position playerPosition, Rotation playerRotation) {
-        this.playerEntityId = playerEntityId;
-        this.playerPosition = playerPosition;
-        this.playerRotation = playerRotation;
+    public MinecraftGameState(int playerEntityId, Position playerPosition, boolean playerIsOnGround, Rotation playerRotation) {
+        this.playerEntityId   = playerEntityId;
+        this.playerPosition   = playerPosition;
+        this.playerIsOnGround = playerIsOnGround;
+        this.playerRotation   = playerRotation;
     }
 
     public int getPlayerEntityId() {
@@ -24,6 +26,10 @@ public class MinecraftGameState {
         return playerPosition;
     }
 
+    public boolean getPlayerIsOnGround() {
+        return playerIsOnGround;
+    }
+
     public Rotation getPlayerRotation() {
         return playerRotation;
     }
@@ -31,9 +37,10 @@ public class MinecraftGameState {
     @Override
     public String toString() {
         return "MinecraftGameState{" +
-                "playerEntityId=" + playerEntityId +
-                ", playerPosition=" + playerPosition +
-                ", playerRotation=" + playerRotation +
+                "playerEntityId=" + this.playerEntityId +
+                ", playerPosition=" + this.playerPosition +
+                ", playerIsOnGround=" + this.playerIsOnGround +
+                ", playerRotation=" + this.playerRotation +
                 '}';
     }
 }
