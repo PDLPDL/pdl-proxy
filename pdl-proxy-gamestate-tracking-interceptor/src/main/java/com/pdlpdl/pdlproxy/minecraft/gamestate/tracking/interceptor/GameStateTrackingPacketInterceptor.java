@@ -25,8 +25,7 @@ import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyPacketControl;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateMutationUtils;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.MinecraftGameState;
+import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateTracker;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Position;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Rotation;
 import org.slf4j.Logger;
@@ -58,38 +57,23 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
 
     private Logger log = DEFAULT_LOGGER;
 
-    private final Object lock = new Object();
-
-    private MinecraftGameStateMutationUtils minecraftGameStateMutationUtils = new MinecraftGameStateMutationUtils();
 
     //
     // RUNTIME STATE
     //
-    private MinecraftGameState minecraftGameState = new MinecraftGameState(-1, null, true, null);
+    private MinecraftGameStateTracker minecraftGameStateTracker = new MinecraftGameStateTracker();
 
 
 //========================================
 // Getters and Setters
 //----------------------------------------
 
-    /**
-     *
-     * @return
-     */
-    public MinecraftGameState getMinecraftGameState() {
-        return minecraftGameState;
+    public MinecraftGameStateTracker getMinecraftGameStateTracker() {
+        return minecraftGameStateTracker;
     }
 
-    public void setMinecraftGameState(MinecraftGameState minecraftGameState) {
-        this.minecraftGameState = minecraftGameState;
-    }
-
-    public MinecraftGameStateMutationUtils getMinecraftGameStateMutationUtils() {
-        return minecraftGameStateMutationUtils;
-    }
-
-    public void setMinecraftGameStateMutationUtils(MinecraftGameStateMutationUtils minecraftGameStateMutationUtils) {
-        this.minecraftGameStateMutationUtils = minecraftGameStateMutationUtils;
+    public void setMinecraftGameStateTracker(MinecraftGameStateTracker minecraftGameStateTracker) {
+        this.minecraftGameStateTracker = minecraftGameStateTracker;
     }
 
 //========================================
@@ -115,8 +99,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
                     clientPlayerPositionPacket.getZ()
             );
 
-            this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerPosition(this.minecraftGameState, newPosition, clientPlayerPositionPacket.isOnGround());
+            this.minecraftGameStateTracker.updatePlayerPosition(newPosition, clientPlayerPositionPacket.isOnGround());
         } else if (clientPacket instanceof ClientPlayerRotationPacket) {
             ClientPlayerRotationPacket clientPlayerRotationPacket = (ClientPlayerRotationPacket) clientPacket;
 
@@ -126,12 +109,10 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
                     0.0 // Player's can't roll (i.e. tilt entire body to left or right)
             );
 
-            this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerRotation(
-                            this.minecraftGameState,
-                            newRotation,
-                            clientPlayerRotationPacket.isOnGround()
-                    );
+            this.minecraftGameStateTracker.updatePlayerRotation(
+                    newRotation,
+                    clientPlayerRotationPacket.isOnGround()
+            );
         } else if (clientPacket instanceof ClientPlayerPositionRotationPacket) {
             ClientPlayerPositionRotationPacket clientPlayerPositionRotationPacket =
                     (ClientPlayerPositionRotationPacket) clientPacket;
@@ -147,13 +128,11 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
                     0.0 // Player's can't roll (i.e. tilt entire body to left or right)
             );
 
-            this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils
-                            .updatePlayerPositionRotation(
-                                    this.minecraftGameState,
-                                    newPosition,
-                                    newRotation,
-                                    clientPlayerPositionRotationPacket.isOnGround());
+            this.minecraftGameStateTracker
+                    .updatePlayerPositionRotation(
+                            newPosition,
+                            newRotation,
+                            clientPlayerPositionRotationPacket.isOnGround());
         }
     }
 
@@ -175,13 +154,11 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
                     0.0 // Player's can't roll (i.e. tilt entire body to left or right)
             );
 
-            this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerPositionRotation(this.minecraftGameState, newPosition, newRotation, null);
+            this.minecraftGameStateTracker.updatePlayerPositionRotation(newPosition, newRotation, null);
         } else if (serverPacket instanceof ServerJoinGamePacket) {
             ServerJoinGamePacket serverJoinGamePacket = (ServerJoinGamePacket) serverPacket;
 
-            this.minecraftGameState =
-                    this.minecraftGameStateMutationUtils.updatePlayerEntityId(this.minecraftGameState, serverJoinGamePacket.getEntityId());
+            this.minecraftGameStateTracker.updatePlayerEntityId(serverJoinGamePacket.getEntityId());
         }
     }
 
