@@ -17,7 +17,6 @@
 package com.pdlpdl.pdlproxy.minecraft.tracing.interceptor;
 
 import com.github.steveice10.packetlib.Session;
-import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptor;
 
@@ -62,13 +61,6 @@ public class PacketTracingSessionInterceptor implements SessionInterceptor {
     }
 
     @Override
-    public void onSessionRemoved(Session removedSession, PacketInterceptorControl packetInterceptorControl) {
-        for (PacketInterceptor packetInterceptor : packetInterceptorControl.getInterceptorIterable()) {
-            if (packetInterceptor instanceof PacketTracingInterceptor) {
-                PacketTracingInterceptor packetTracingInterceptor = (PacketTracingInterceptor) packetInterceptor;
-
-                packetTracingInterceptor.shutdown();
-            }
-        }
+    public void onSessionRemoved(Session removedSession) {
     }
 }

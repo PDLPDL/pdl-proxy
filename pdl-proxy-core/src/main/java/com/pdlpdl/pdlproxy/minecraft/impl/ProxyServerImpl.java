@@ -217,6 +217,13 @@ public class ProxyServerImpl implements ProxyServer {
             //
             sessionState.getProxyClientSessionAdapter().shutdown("proxy server removed client session");
         }
+
+        //
+        // Notify listeners of the removal
+        //
+        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+            sessionInterceptor.onSessionRemoved(sessionRemovedEvent.getSession());
+        }
     }
 
 //========================================

@@ -65,6 +65,6 @@ public class GameStateTrackingSessionInterceptor implements SessionInterceptor {
     }
 
     @Override
-    public void onSessionRemoved(Session removedSession, PacketInterceptorControl packetInterceptorControl) {
+    public void onSessionRemoved(Session removedSession) {
     }
 }

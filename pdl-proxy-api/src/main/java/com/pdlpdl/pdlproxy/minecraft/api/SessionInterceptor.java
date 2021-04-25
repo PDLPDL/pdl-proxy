@@ -42,9 +42,6 @@ public interface SessionInterceptor {
      * Notification when a Player session is removed from the proxy.
      *
      * @param removedSession session being removed.
-     * @param packetInterceptorControl control which can be used to view the interceptors registered for the session;
-     *                                 note that modifications to the interceptors at this point won't have any effect
-     *                                 since the session is already removed.
      */
-    void onSessionRemoved(Session removedSession, PacketInterceptorControl packetInterceptorControl);
+    void onSessionRemoved(Session removedSession);
 }

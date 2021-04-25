@@ -98,6 +98,14 @@ public class ProxyClientSessionAdapter implements SessionListener {
         this.notifyPacketInterceptorsInstalled();
     }
 
+//========================================
+// Getters
+//----------------------------------------
+
+    public List<PacketInterceptor> getPacketInterceptors() {
+        return packetInterceptors;
+    }
+
 
 //========================================
 // Lifecycle

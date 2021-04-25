@@ -40,7 +40,7 @@ public class PhantomBeeSessionInterceptor implements SessionInterceptor {
     }
 
     @Override
-    public void onSessionRemoved(Session removedSession, PacketInterceptorControl packetInterceptorControl) {
+    public void onSessionRemoved(Session removedSession) {
 
     }
 }
