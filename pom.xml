@@ -38,7 +38,7 @@
 
 
         <commons-cli.version>1.4</commons-cli.version>
-        <immutable-utils.version>1.0.0-SNAPSHOT</immutable-utils.version> <!-- TBD: release -->
+        <immutable-utils.version>1.0.0</immutable-utils.version>
         <minecraft-protocol-lib.version>1.16.4-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
         <packetlib.version>1.7</packetlib.version>
