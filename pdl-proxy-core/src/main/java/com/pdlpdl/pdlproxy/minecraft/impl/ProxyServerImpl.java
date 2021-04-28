@@ -19,16 +19,20 @@ package com.pdlpdl.pdlproxy.minecraft.impl;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.server.SessionAddedEvent;
 import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
+import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnectionFactory;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyServer;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptorControl;
+import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,6 +69,7 @@ public class ProxyServerImpl implements ProxyServer {
     private HollowMinecraftServer hollowMinecraftServer;
     private DownstreamServerConnectionFactory downstreamServerConnectionFactory;
     private Map<Session, ProxyClientSessionState> sessionStateMap = new HashMap<>();
+    private List<SessionLoginInterceptor> loginInterceptorList = new LinkedList<>();
 
 //========================================
 // Constructor
@@ -110,6 +115,13 @@ public class ProxyServerImpl implements ProxyServer {
         this.downstreamServerPort = downstreamServerPort;
     }
 
+    public List<SessionLoginInterceptor> getLoginInterceptorList() {
+        return loginInterceptorList;
+    }
+
+    public void setLoginInterceptorList(List<SessionLoginInterceptor> loginInterceptorList) {
+        this.loginInterceptorList = loginInterceptorList;
+    }
 
 //========================================
 // Proxy Server Interface
@@ -143,6 +155,12 @@ public class ProxyServerImpl implements ProxyServer {
         return this.sessionInterceptorControl;
     }
 
+    @Override
+    public void addSessionLoginInterceptor(SessionLoginInterceptor sessionLoginInterceptor) {
+        synchronized (this.sync) {
+            this.loginInterceptorList.add(sessionLoginInterceptor);
+        }
+    }
 
 //========================================
 //  Initialize Runtime State
@@ -187,7 +205,8 @@ public class ProxyServerImpl implements ProxyServer {
         // Create the Proxy Session Adapter and add it as a listener to the new Client Session.
         //
         ProxyClientSessionAdapter proxyClientSessionAdapter =
-                new ProxyClientSessionAdapter(this::connectDownstream, upstreamClientSession, packetInterceptorControl);
+                new ProxyClientSessionAdapter(this::connectDownstream, upstreamClientSession, packetInterceptorControl,
+                        this::executeSessionLoginInterceptors);
 
         upstreamClientSession.addListener(proxyClientSessionAdapter);
 
@@ -261,6 +280,22 @@ public class ProxyServerImpl implements ProxyServer {
         //
         for (ProxyClientSessionState proxyClientSessionState : activeSessions.values()) {
             proxyClientSessionState.getProxyClientSessionAdapter().shutdown("proxy server shutdown");
+        }
+    }
+
+    /**
+     * Call all of the login-success interceptors for the given login success sending event.
+     *
+     * @param loginSuccessSendingEvent the event with the LoginSuccessPacket about to be sent.
+     */
+    private void executeSessionLoginInterceptors(PacketSendingEvent loginSuccessSendingEvent) {
+        List<SessionLoginInterceptor> interceptors = new LinkedList<>();
+        synchronized (this.sync) {
+            interceptors.addAll(this.loginInterceptorList);
+        }
+
+        for (SessionLoginInterceptor oneInterceptor : interceptors) {
+            oneInterceptor.onPlayerLoginSuccessSending(loginSuccessSendingEvent);
         }
     }
 }

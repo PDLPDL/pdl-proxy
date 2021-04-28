@@ -40,6 +40,7 @@ import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
+import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,11 @@ public class ProxyClientSessionAdapter implements SessionListener {
     private final Session upstreamClientSession;
     private final List<PacketInterceptor> packetInterceptors;
 
+    /**
+     * Session Login Interceptor for the owner of this adapter (ProxyServerImpl).
+     */
+    private final SessionLoginInterceptor sessionLoginInterceptor;
+
     private final Object sync = new Object();
 
     private DownstreamServerConnection downstreamServerConnection;
@@ -77,10 +83,12 @@ public class ProxyClientSessionAdapter implements SessionListener {
     public ProxyClientSessionAdapter(
             Function<IncomingClientSessionInfo, DownstreamServerConnection> startProxyServerSession,
             Session upstreamClientSession,
-            PacketInterceptorControl packetInterceptorControl) {
+            PacketInterceptorControl packetInterceptorControl,
+            SessionLoginInterceptor sessionLoginInterceptor) {
 
         this.startProxyServerSession = startProxyServerSession;
         this.upstreamClientSession = upstreamClientSession;
+        this.sessionLoginInterceptor = sessionLoginInterceptor;
 
         //
         // Initialize Packet Interceptors Array.  Result is an unmodifiable list.  Note that it is feasible the list
@@ -154,6 +162,13 @@ public class ProxyClientSessionAdapter implements SessionListener {
     @Override
     public void packetSending(PacketSendingEvent event) {
         this.log.trace("sending packet to client: class={}", event.getPacket().getClass().getName());
+
+        //
+        // Call the Session Login Interceptor now
+        //
+        if (event.getPacket() instanceof LoginSuccessPacket) {
+            this.sessionLoginInterceptor.onPlayerLoginSuccessSending(event);
+        }
     }
 
     @Override

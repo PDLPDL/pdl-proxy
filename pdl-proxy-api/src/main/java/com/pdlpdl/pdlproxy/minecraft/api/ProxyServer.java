@@ -20,4 +20,5 @@ public interface ProxyServer {
     void start();
     void shutdown();
     SessionInterceptorControl getSessionInterceptorControl();
+    void addSessionLoginInterceptor(SessionLoginInterceptor sessionLoginInterceptor);
 }

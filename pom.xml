@@ -38,6 +38,7 @@
 
         <commons-cli.version>1.4</commons-cli.version>
         <immutable-utils.version>1.0.0</immutable-utils.version>
+        <jackson.version>2.10.3</jackson.version>
         <minecraft-protocol-lib.version>1.16.4-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
         <packetlib.version>1.7</packetlib.version>
@@ -50,6 +51,7 @@
         <module>pdl-proxy-core</module>
         <module>pdl-proxy-main</module>
 
+        <module>pdl-proxy-jackson</module>
         <module>pdl-proxy-tracing-interceptor</module>
         <module>pdl-proxy-gamestate-tracking-interceptor</module>
     </modules>
@@ -124,6 +126,13 @@
                 <artifactId>netty-transport</artifactId>
                 <version>${netty.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
 
             <dependency>
                 <groupId>com.artnaseef</groupId>
