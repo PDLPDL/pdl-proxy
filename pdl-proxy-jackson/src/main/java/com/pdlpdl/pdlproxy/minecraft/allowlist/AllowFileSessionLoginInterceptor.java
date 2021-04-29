@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -79,6 +81,7 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         return loaded;
     }
 
+    @Override
     public void grant(AllowListEntry newEntry) {
         this.checkLoad();
 
@@ -90,6 +93,7 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         }
     }
 
+    @Override
     public void revoke(AllowListEntry revokeEntry) {
         this.checkLoad();
 
@@ -97,6 +101,15 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
             if (this.allowListEntries.remove(revokeEntry)) {
                 this.save();
             }
+        }
+    }
+
+    @Override
+    public List<AllowListEntry> getEntries() {
+        this.checkLoad();
+
+        synchronized (this.lock) {
+            return new LinkedList<>(this.allowListEntries);
         }
     }
 
@@ -117,7 +130,7 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         // If Disabled, just skip
         //
         if (! this.enabled) {
-            this.log.info("ALLOW LIST disabled; allowing {}", playerName);
+            this.log.info("ALLOW LIST disabled; allowing session for player: player-name={}", playerName);
             return;
         }
 
@@ -158,12 +171,18 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
             this.updateNumber = allowListFile.getUpdateNumber();
             this.log.info("Loading allow list: update-number={}", this.updateNumber);
 
+            int count = 0;
+
             if (allowListFile.getAllowListEntries() != null) {
                 for (AllowListEntry oneEntry : allowListFile.getAllowListEntries()) {
                     this.log.debug("Loaded allow list entry: {}", oneEntry);
                     this.allowListEntries.add(oneEntry);
+                    count++;
                 }
             }
+
+            this.log.info("ALLOW LIST: finished loading entries: loaded-count={}; total-count={}",
+                    count, this.allowListEntries.size());
 
             this.loaded = true;
         } catch (IOException ioExc) {
@@ -177,13 +196,18 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         File updateFile = new File(this.allowFile.getPath() + ".upd");
         this.updateNumber++;
 
-        this.log.info("Writing allow list; update-number={}", this.updateNumber);
+        AllowListFile allowListFile;
+        synchronized (this.lock) {
+            allowListFile = new AllowListFile(this.allowListEntries, this.updateNumber);
+        }
 
-        new AllowListFile(this.allowListEntries, this.updateNumber);
+        this.log.info("Writing allow list: update-number={}; count={}",
+                allowListFile.getUpdateNumber(),
+                allowListFile.getAllowListEntries().size());
 
         try {
             // 2-step update.  Write to the ".upd" version of the file, then rename.
-            this.objectMapper.writeValue(updateFile, this.allowListEntries);
+            this.objectMapper.writeValue(updateFile, allowListFile);
             if (! updateFile.renameTo(this.allowFile)) {
                 this.log.error("FAILED to rename .upd file to update ALLOW LIST; updates will be effective until restart");
             }
