@@ -194,10 +194,10 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
     // TODO: highly critical as changes to the allow-list are not expected to be frequent.
     private void save() {
         File updateFile = new File(this.allowFile.getPath() + ".upd");
-        this.updateNumber++;
 
         AllowListFile allowListFile;
         synchronized (this.lock) {
+            this.updateNumber++;
             allowListFile = new AllowListFile(this.allowListEntries, this.updateNumber);
         }
 
