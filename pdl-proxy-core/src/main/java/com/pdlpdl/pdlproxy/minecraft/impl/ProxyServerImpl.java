@@ -22,7 +22,10 @@ import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
 import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnectionFactory;
+import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
+import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControl;
+import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControlAware;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyServer;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptorControl;
@@ -208,6 +211,21 @@ public class ProxyServerImpl implements ProxyServer {
                 new ProxyClientSessionAdapter(this::connectDownstream, upstreamClientSession, packetInterceptorControl,
                         this::executeSessionLoginInterceptors);
 
+
+        //
+        // Inject the proxy direct packet control into the downstream for any session or packet interceptors that expose
+        //  the ProxyDirectPacketControlAware interface.
+        //
+        this.callDirectPacketAwareInterceptors(
+                proxyClientSessionAdapter.getProxyDirectPacketControl(),
+                sessionInterceptorControl.getInterceptorIterable(),
+                packetInterceptorControl);
+
+
+        //
+        // Now that everything is prepared, wire this adapter into the upstream client session (this listener receives
+        //  packets as well as connected/disconnected events).
+        //
         upstreamClientSession.addListener(proxyClientSessionAdapter);
 
         //
@@ -217,6 +235,33 @@ public class ProxyServerImpl implements ProxyServer {
             ProxyClientSessionState state = new ProxyClientSessionState(upstreamClientSession, proxyClientSessionAdapter);
             this.sessionStateMap.put(upstreamClientSession, state);
         }
+    }
+
+    private void callDirectPacketAwareInterceptors(
+            ProxyDirectPacketControl proxyDirectPacketControl,
+            Iterable<SessionInterceptor> sessionInterceptorIterable,
+            PacketInterceptorControl packetInterceptorControl) {
+
+        //
+        // First do the session interceptors
+        //
+        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+            if (sessionInterceptor instanceof ProxyDirectPacketControlAware) {
+                ((ProxyDirectPacketControlAware) sessionInterceptor)
+                        .injectProxyDirectPacketControl(proxyDirectPacketControl);
+            }
+        }
+
+        //
+        // Next the packet interceptors
+        //
+        for (PacketInterceptor packetInterceptor : packetInterceptorControl.getInterceptorIterable()) {
+            if (packetInterceptor instanceof ProxyDirectPacketControlAware) {
+                ((ProxyDirectPacketControlAware) packetInterceptor)
+                        .injectProxyDirectPacketControl(proxyDirectPacketControl);
+            }
+        }
+
     }
 
     private void handleSessionRemoved(SessionRemovedEvent sessionRemovedEvent) {

@@ -18,7 +18,7 @@ package com.pdlpdl.pdlproxy.minecraft.api;
 
 import com.github.steveice10.packetlib.packet.Packet;
 
-public interface ProxyPacketControl {
+public interface ProxyPacketControl extends ProxyDirectPacketControl {
     /**
      * Drop the original packet from the proxy stream.
      */
@@ -45,23 +45,4 @@ public interface ProxyPacketControl {
      * @param newPacket packet to add to the stream.
      */
     void addPacketToServer(Packet newPacket);
-
-    /**
-     * Directly / immediately send the given packet to the client.
-     *
-     * TODO: consider whether to separate this for async processing that uses it.
-     *
-     * @param newPacket
-     */
-    void directSendPacketToClient(Packet newPacket);
-
-
-    /**
-     * Directly / immediately send the given packet to the server.
-     *
-     * TODO: consider whether to separate this for async processing that uses it.
-     *
-     * @param newPacket
-     */
-    void directSendPacketToServer(Packet newPacket);
 }

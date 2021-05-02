@@ -40,6 +40,8 @@ import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
+import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControl;
+import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControlSupplier;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +55,7 @@ import java.util.function.Function;
  * SessionListener for upstream Client connections that forwards packets to the downstream server after initiating the
  * downstream connection on login success.
  */
-public class ProxyClientSessionAdapter implements SessionListener {
+public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPacketControlSupplier {
 
     private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ProxyClientSessionAdapter.class);
     private Logger log = DEFAULT_LOGGER;
@@ -247,6 +249,16 @@ public class ProxyClientSessionAdapter implements SessionListener {
 
 
 //========================================
+// PacketInterceptorControlSupplier
+//----------------------------------------
+
+    @Override
+    public ProxyPacketControlImpl getProxyDirectPacketControl() {
+        return new ProxyPacketControlImpl(this::directSendPacketToClient, this::directSendPacketToServer);
+    }
+
+
+//========================================
 // Packet Event Handling
 //----------------------------------------
 
@@ -373,8 +385,7 @@ public class ProxyClientSessionAdapter implements SessionListener {
     }
 
     private boolean applyReceivedPacketInterceptors(Packet packet, boolean isClient) {
-        ProxyPacketControlImpl proxyPacketControl = new ProxyPacketControlImpl(
-                this::directSendPacketToClient, this::directSendPacketToServer);
+        ProxyPacketControlImpl proxyPacketControl = this.getProxyDirectPacketControl();
 
         for (PacketInterceptor onePacketInterceptor : this.packetInterceptors) {
             if (isClient) {
