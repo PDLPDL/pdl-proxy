@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *      - It guarantees readers of the state see consistent information (e.g. only see position information for entities that still exist)
  *      - Eliminates concurrency issues since the state cannot be mutated by concurrent threads
  */
-public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
+public class GameStateTrackingPacketInterceptor implements PacketInterceptor, GameStateTrackerProvider {
 
     private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(GameStateTrackingPacketInterceptor.class);
 
@@ -68,6 +68,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor {
 // Getters and Setters
 //----------------------------------------
 
+    @Override
     public MinecraftGameStateTracker getMinecraftGameStateTracker() {
         return minecraftGameStateTracker;
     }
