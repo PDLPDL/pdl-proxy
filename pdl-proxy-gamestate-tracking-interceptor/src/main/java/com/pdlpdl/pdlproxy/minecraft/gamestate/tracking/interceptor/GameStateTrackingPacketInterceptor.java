@@ -20,6 +20,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.packet.Packet;
@@ -160,6 +161,15 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
             ServerJoinGamePacket serverJoinGamePacket = (ServerJoinGamePacket) serverPacket;
 
             this.minecraftGameStateTracker.updatePlayerEntityId(serverJoinGamePacket.getEntityId());
+        } else if (serverPacket instanceof ServerPlayerHealthPacket) {
+            ServerPlayerHealthPacket serverPlayerHealthPacket = (ServerPlayerHealthPacket) serverPacket;
+
+
+            this.minecraftGameStateTracker.updatePlayerHealth(
+                serverPlayerHealthPacket.getHealth(),
+                serverPlayerHealthPacket.getSaturation(),
+                serverPlayerHealthPacket.getFood()
+            );
         }
     }
 

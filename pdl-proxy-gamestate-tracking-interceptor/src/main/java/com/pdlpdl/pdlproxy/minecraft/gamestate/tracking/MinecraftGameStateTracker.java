@@ -12,7 +12,7 @@ import java.util.function.Supplier;
  * TODO: create a unified game state for all players.
  */
 public class MinecraftGameStateTracker {
-    private MinecraftGameState minecraftGameState = new MinecraftGameState(-1, null, true, null);
+    private MinecraftGameState minecraftGameState = MinecraftGameState.INITIAL_GAME_STATE;
 
     private MinecraftGameStateMutationUtils minecraftGameStateMutationUtils = new MinecraftGameStateMutationUtils();
 
@@ -68,6 +68,12 @@ public class MinecraftGameStateTracker {
         return this.updateCommon(
                 () -> this.minecraftGameStateMutationUtils
                         .updatePlayerPositionRotation(this.minecraftGameState, updatedPosition, updatedRotation, updatedIsOnGround));
+    }
+
+    public MinecraftGameState updatePlayerHealth(float health, float saturation, int food) {
+        return this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .updatePlayerHealth(this.minecraftGameState, health, saturation, food));
     }
 
 //========================================

@@ -98,6 +98,37 @@ public class MinecraftGameStateMutationUtils {
         return this.updatePlayerRotation(intermediate, updatedRotation, null);
     }
 
+    /**
+     * Update the player health in the given game state.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param updatedHealth new player health value.
+     * @param updatedSaturation new player saturation value.
+     * @param updatedFood new player food value.
+     * @return the updated game state.  Note the original game state is returned if the updated values are equal to the
+     * originals.
+     */
+    public MinecraftGameState updatePlayerHealth(MinecraftGameState orig, float updatedHealth, float updatedSaturation, int updatedFood) {
+        if (
+                ( orig.getPlayerHealth() == updatedHealth ) &&
+                ( orig.getPlayerSaturation() == updatedSaturation) &&
+                ( orig.getPlayerFood() == updatedFood )
+        ) {
+            return orig;
+        }
+
+        Mutator healthMutator =
+                this.mutationUtils.makeAnchoredPathMutator((origHealth) -> updatedHealth, MinecraftGameState.class, "playerHealth");
+        Mutator saturationMutator =
+                this.mutationUtils.makeAnchoredPathMutator((origSaturation) -> updatedSaturation, MinecraftGameState.class, "playerSaturation");
+        Mutator foodMutator =
+                this.mutationUtils.makeAnchoredPathMutator((origFood) -> updatedFood, MinecraftGameState.class, "playerFood");
+
+        Mutator fullMutator = this.mutationUtils.combineMutators(healthMutator, saturationMutator, foodMutator);
+
+        return this.mutationUtils.mutateDeep(orig, fullMutator);
+    }
+
 //========================================
 //
 //----------------------------------------

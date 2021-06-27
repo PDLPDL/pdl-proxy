@@ -18,7 +18,10 @@ public class MinecraftGameStateTest {
                 13,
                 new Position(1.0, 2.0, 3.0),
                 true,
-                new Rotation(180.0, -90.0, 0.0)
+                new Rotation(180.0, -90.0, 0.0),
+                20.0f,
+                0f,
+                20
         );
 
         this.mutationUtils = new MinecraftGameStateMutationUtils();
