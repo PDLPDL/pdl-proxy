@@ -2,10 +2,11 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking;
 
 import com.artnaseef.immutable.utils.MutationUtils;
 import com.artnaseef.immutable.utils.Mutator;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.MinecraftGameState;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Position;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Rotation;
+import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.*;
 
+import java.util.HashMap;
 import java.util.Objects;
 
 public class MinecraftGameStateMutationUtils {
@@ -127,6 +128,86 @@ public class MinecraftGameStateMutationUtils {
         Mutator fullMutator = this.mutationUtils.combineMutators(healthMutator, saturationMutator, foodMutator);
 
         return this.mutationUtils.mutateDeep(orig, fullMutator);
+    }
+
+
+//========================================
+// World Block State Updates
+//========================================
+
+    /**
+     * Update the game state with the chunk data received from the server.  Any existing data for the chunk, including
+     * overrides, is replaced.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param
+     * @return the updated game state.
+     */
+    public MinecraftGameState updateChunk(MinecraftGameState orig, ChunkPosition chunkPosition, ImmutableChunkSectionFacade[] chunkSections) {
+        MinecraftChunkBlockState updatedBlockState = new MinecraftChunkBlockState(chunkPosition, chunkSections, new HashMap<>());
+
+        Mutator worldBlockStateMutator =
+                this.mutationUtils.makeAnchoredPathMutator(
+                        (origWorldBlockStateSupplier) ->
+                                ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).placeChunk(chunkPosition, updatedBlockState),
+                        MinecraftGameState.class,
+                        "minecraftWorldBlockState");
+
+        return this.mutationUtils.mutateDeep(orig, worldBlockStateMutator);
+    }
+
+    /**
+     * Update the game state to unload the specified chunk..
+     *
+     * @param orig original Minecraft game state to update.
+     * @param
+     * @return the updated game state.
+     */
+    public MinecraftGameState unloadChunk(MinecraftGameState orig, ChunkPosition chunkPosition) {
+        Mutator worldBlockStateMutator =
+                this.mutationUtils.makeAnchoredPathMutator(
+                        (origWorldBlockStateSupplier) ->
+                                ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).unloadChunk(chunkPosition),
+                        MinecraftGameState.class,
+                        "minecraftWorldBlockState");
+
+        return this.mutationUtils.mutateDeep(orig, worldBlockStateMutator);
+    }
+
+    /**
+     * Update the game state to record the ID of the block at the given position.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param
+     * @return the updated game state.
+     */
+    public MinecraftGameState updateBlock(MinecraftGameState orig, Position blockWorldPosition, int blockId) {
+        Mutator worldBlockStateMutator =
+                this.mutationUtils.makeAnchoredPathMutator(
+                        (origWorldBlockStateSupplier) ->
+                                ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).updateBlock(blockWorldPosition, blockId),
+                        MinecraftGameState.class,
+                        "minecraftWorldBlockState");
+
+        return this.mutationUtils.mutateDeep(orig, worldBlockStateMutator);
+    }
+
+    /**
+     * Update the game state to record the IDs of the blocks at the given positions.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param
+     * @return the updated game state.
+     */
+    public MinecraftGameState updateMultipleBlocks(MinecraftGameState orig, int chunkX, int chunkZ, BlockChangeRecord[] changeRecords) {
+        Mutator worldBlockStateMutator =
+                this.mutationUtils.makeAnchoredPathMutator(
+                        (origWorldBlockStateSupplier) ->
+                                ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).updateMultipleBlocks(chunkX, chunkZ, changeRecords),
+                        MinecraftGameState.class,
+                        "minecraftWorldBlockState");
+
+        return this.mutationUtils.mutateDeep(orig, worldBlockStateMutator);
     }
 
 //========================================

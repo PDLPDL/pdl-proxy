@@ -1,8 +1,10 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking;
 
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.MinecraftGameState;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Position;
-import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Rotation;
+import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
+import com.github.steveice10.mc.protocol.data.game.chunk.Column;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
+import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.*;
 
 import java.util.function.Supplier;
 
@@ -76,6 +78,43 @@ public class MinecraftGameStateTracker {
                         .updatePlayerHealth(this.minecraftGameState, health, saturation, food));
     }
 
+    public MinecraftGameState chunkLoaded(ServerChunkDataPacket chunkDataPacket) {
+        Column column = chunkDataPacket.getColumn();
+
+        ChunkPosition chunkPosition = new ChunkPosition(column.getX(), column.getZ());
+        Chunk[] chunkSections = chunkDataPacket.getColumn().getChunks();
+
+        ImmutableChunkSectionFacade[] immutableChunkSections = this.convertChunksArrayToImmutables(chunkSections);
+
+        return  this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .updateChunk(this.minecraftGameState, chunkPosition, immutableChunkSections)
+        );
+    }
+
+    public MinecraftGameState chunkUnloaded(int x, int z) {
+        ChunkPosition chunkPosition = new ChunkPosition(x, z);
+
+        return  this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .unloadChunk(this.minecraftGameState, chunkPosition)
+        );
+    }
+
+    public MinecraftGameState blockChanged(Position blockPosition, int blockId) {
+        return  this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .updateBlock(this.minecraftGameState, blockPosition, blockId)
+        );
+    }
+
+    public MinecraftGameState multipleBlocksChanged(int chunkX, int chunkZ, BlockChangeRecord[] blockChangeRecords) {
+        return  this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .updateMultipleBlocks(this.minecraftGameState, chunkX, chunkZ, blockChangeRecords)
+        );
+    }
+
 //========================================
 // Internals
 //----------------------------------------
@@ -85,4 +124,26 @@ public class MinecraftGameStateTracker {
         this.updateMinecraftGameState(result);
         return result;
     }
+
+    private ImmutableChunkSectionFacade[] convertChunksArrayToImmutables(Chunk[] arr) {
+        ImmutableChunkSectionFacade[] result = new ImmutableChunkSectionFacade[arr.length];
+
+        int cur = 0;
+        while (cur < arr.length) {
+            if (arr[cur] != null) {
+                result[cur] = new ImmutableChunkSectionFacade(arr[cur]);
+            } else {
+                result[cur] = null;
+            }
+
+            cur++;
+        }
+
+        return result;
+    }
+
+//========================================
+//
+//========================================
+
 }

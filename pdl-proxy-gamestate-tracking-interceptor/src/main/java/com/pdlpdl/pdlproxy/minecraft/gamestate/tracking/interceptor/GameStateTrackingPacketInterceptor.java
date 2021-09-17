@@ -22,6 +22,10 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
@@ -170,6 +174,35 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
                 serverPlayerHealthPacket.getSaturation(),
                 serverPlayerHealthPacket.getFood()
             );
+        } else if (serverPacket instanceof ServerChunkDataPacket) {
+            this.minecraftGameStateTracker.chunkLoaded((ServerChunkDataPacket) serverPacket);
+        } else if (serverPacket instanceof ServerUnloadChunkPacket) {
+            ServerUnloadChunkPacket serverUnloadChunkPacket = (ServerUnloadChunkPacket) serverPacket;
+
+            this.minecraftGameStateTracker.chunkUnloaded(serverUnloadChunkPacket.getX(),serverUnloadChunkPacket.getZ());
+        } else if (serverPacket instanceof ServerBlockChangePacket) {
+            ServerBlockChangePacket serverBlockChangePacket = (ServerBlockChangePacket) serverPacket;
+
+            // X, Y, and Z getters return absolute world position
+            Position blockPosition = new Position(
+                    serverBlockChangePacket.getRecord().getPosition().getX(),
+                    serverBlockChangePacket.getRecord().getPosition().getY(),
+                    serverBlockChangePacket.getRecord().getPosition().getZ()
+            );
+
+            int blockId = serverBlockChangePacket.getRecord().getBlock();
+
+            this.minecraftGameStateTracker.blockChanged(blockPosition, blockId);
+        } else if (serverPacket instanceof ServerMultiBlockChangePacket) {
+            ServerMultiBlockChangePacket serverMultiBlockChangePacket = (ServerMultiBlockChangePacket) serverPacket;
+
+            int chunkX = serverMultiBlockChangePacket.getChunkX();
+            int chunkZ = serverMultiBlockChangePacket.getChunkZ();
+
+            // Note we ignore the packet's chunkY because the tracker doesn't keep "chunk sections" it just keeps
+            //  full-height chunks
+
+            this.minecraftGameStateTracker.multipleBlocksChanged(chunkX, chunkZ, serverMultiBlockChangePacket.getRecords());
         }
     }
 

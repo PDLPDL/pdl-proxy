@@ -2,6 +2,8 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
 import com.artnaseef.immutable.utils.MutationUtilsImmutableProperties;
 
+import java.util.HashMap;
+
 @MutationUtilsImmutableProperties(
         properties = {
                 "playerEntityId",
@@ -10,9 +12,11 @@ import com.artnaseef.immutable.utils.MutationUtilsImmutableProperties;
                 "playerRotation",
                 "playerHealth",
                 "playerSaturation",
-                "playerFood"})
+                "playerFood",
+                "minecraftWorldBlockState"
+        })
 public class MinecraftGameState {
-    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, true, null, 20.0f, 0f, 20);
+    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, true, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>()));
 
     private final int playerEntityId;
     private final Position playerPosition;
@@ -23,6 +27,8 @@ public class MinecraftGameState {
     private final float playerSaturation;
     private final int playerFood;
 
+    private final MinecraftWorldBlockState minecraftWorldBlockState;
+
     public MinecraftGameState(
             int playerEntityId,
             Position playerPosition,
@@ -30,7 +36,8 @@ public class MinecraftGameState {
             Rotation playerRotation,
             float playerHealth,
             float playerSaturation,
-            int playerFood
+            int playerFood,
+            MinecraftWorldBlockState minecraftWorldBlockState
             ) {
 
         this.playerEntityId   = playerEntityId;
@@ -40,6 +47,12 @@ public class MinecraftGameState {
         this.playerHealth     = playerHealth;
         this.playerSaturation = playerSaturation;
         this.playerFood       = playerFood;
+
+        if (minecraftWorldBlockState == null) {
+            minecraftWorldBlockState = new MinecraftWorldBlockState(null);
+        }
+
+        this.minecraftWorldBlockState = minecraftWorldBlockState;
     }
 
     public int getPlayerEntityId() {
@@ -70,6 +83,10 @@ public class MinecraftGameState {
         return playerFood;
     }
 
+    public MinecraftWorldBlockState getMinecraftWorldBlockState() {
+        return minecraftWorldBlockState;
+    }
+
     @Override
     public String toString() {
         return "MinecraftGameState{" +
@@ -80,6 +97,7 @@ public class MinecraftGameState {
                 ", playerHealth=" + this.playerHealth +
                 ", playerSaturation=" + this.playerSaturation +
                 ", playerFood=" + this.playerFood +
+                ", numChunks=" + this.minecraftWorldBlockState.getChunks().size() +
                 '}';
     }
 }
