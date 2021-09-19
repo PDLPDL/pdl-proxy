@@ -22,7 +22,7 @@
     <parent>
         <groupId>com.pdlpdl</groupId>
         <artifactId>pdl-proxy-parent</artifactId>
-        <version>1.4.0</version>
+        <version>1.4.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>pdl-proxy-tracing-interceptor</artifactId>
