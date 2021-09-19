@@ -81,7 +81,7 @@ public class MinecraftGameStateTracker {
     public MinecraftGameState chunkLoaded(ServerChunkDataPacket chunkDataPacket) {
         Column column = chunkDataPacket.getColumn();
 
-        ChunkPosition chunkPosition = new ChunkPosition(column.getX(), column.getZ());
+        ChunkPosition chunkPosition = new ChunkPosition(column.getX() * 16, column.getZ() * 16);
         Chunk[] chunkSections = chunkDataPacket.getColumn().getChunks();
 
         ImmutableChunkSectionFacade[] immutableChunkSections = this.convertChunksArrayToImmutables(chunkSections);
