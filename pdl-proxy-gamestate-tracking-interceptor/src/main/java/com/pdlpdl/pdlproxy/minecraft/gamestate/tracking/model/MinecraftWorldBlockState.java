@@ -100,7 +100,7 @@ public class MinecraftWorldBlockState {
 
         // Map the block to a chunk
         ChunkPosition chunkPosition =
-                this.getChunkPositionForWorldPosition((int) blockWorldPosition.getX(), (int) blockWorldPosition.getZ());
+                this.getChunkPositionForWorldPosition((int) Math.floor(blockWorldPosition.getX()), (int) Math.floor(blockWorldPosition.getZ()));
 
         // Lookup the chunk
         MinecraftChunkBlockState minecraftChunkBlockState = this.chunks.get(chunkPosition);
@@ -207,16 +207,28 @@ public class MinecraftWorldBlockState {
 //========================================
 
     private ChunkPosition getChunkPositionForWorldPosition(int x, int z) {
-        int chunkPosX = x - (x % 16);
-        int chunkPosZ = z - (z % 16);
+        int chunkPosX;
+        int chunkPosZ;
+
+        if (x >= 0) {
+            chunkPosX = x - (x % 16);
+        } else {
+            chunkPosX = x - 16 + (-x % 16);
+        }
+
+        if (z >= 0) {
+            chunkPosZ = z - (z % 16);
+        } else {
+            chunkPosZ = z - 16 + (-z % 16);
+        }
 
         return new ChunkPosition(chunkPosX, chunkPosZ);
     }
 
     private BlockChunkBasedPosition calculateBlockRelativePositionInChunk(Position blockWorldPosition, ChunkPosition chunkPosition) {
-        short relX = (short) ((int) blockWorldPosition.getX() - chunkPosition.getX());
-        short relY = (short) blockWorldPosition.getY();
-        short relZ = (short) ((int) blockWorldPosition.getZ() - chunkPosition.getZ());
+        short relX = (short) (Math.floor(blockWorldPosition.getX()) - chunkPosition.getX());
+        short relY = (short) Math.floor(blockWorldPosition.getY());
+        short relZ = (short) (Math.floor(blockWorldPosition.getZ()) - chunkPosition.getZ());
 
         BlockChunkBasedPosition result = new BlockChunkBasedPosition(relX, relY, relZ);
 
@@ -226,9 +238,9 @@ public class MinecraftWorldBlockState {
     private BlockChunkBasedPosition calculateBlockRelativePositionInChunk(
             com.github.steveice10.mc.protocol.data.game.entity.metadata.Position  blockWorldPosition, ChunkPosition chunkPosition) {
 
-        short relX = (short) (blockWorldPosition.getX() - chunkPosition.getX());
-        short relY = (short) blockWorldPosition.getY();
-        short relZ = (short) (blockWorldPosition.getZ() - chunkPosition.getZ());
+        short relX = (short) (Math.floor(blockWorldPosition.getX()) - chunkPosition.getX());
+        short relY = (short) Math.floor(blockWorldPosition.getY());
+        short relZ = (short) (Math.floor(blockWorldPosition.getZ()) - chunkPosition.getZ());
 
         BlockChunkBasedPosition result = new BlockChunkBasedPosition(relX, relY, relZ);
 
