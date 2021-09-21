@@ -22,7 +22,7 @@ public class AllowListEntry implements Comparable {
     @Override
     public int compareTo(Object o) {
         if (o instanceof AllowListEntry) {
-            return this.playerName.compareTo(((AllowListEntry) o).playerName);
+            return this.playerName.compareToIgnoreCase(((AllowListEntry) o).playerName);
         } else {
             return -1;
         }
@@ -33,12 +33,12 @@ public class AllowListEntry implements Comparable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AllowListEntry that = (AllowListEntry) o;
-        return playerName.equals(that.playerName);
+        return playerName.equalsIgnoreCase(that.playerName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(playerName);
+        return Objects.hash(playerName.toUpperCase());
     }
 
     @Override
