@@ -18,10 +18,9 @@ package com.pdlpdl.pdlproxy.minecraft.impl;
 
 import com.github.steveice10.mc.auth.service.SessionService;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.packetlib.Client;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.tcp.TcpSessionFactory;
+import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnectionFactory;
 import com.pdlpdl.pdlproxy.minecraft.ProxyPacketListener;
@@ -94,13 +93,12 @@ public class DownstreamServerConnectionFactoryImpl implements DownstreamServerCo
      */
     private Session prepareMinecraftSession(String username) {
         MinecraftProtocol minecraftProtocol = new MinecraftProtocol(username);
-        Client client = new Client(downstreamHost, downstreamPort, minecraftProtocol, new TcpSessionFactory());
-        Session session = client.getSession();
+        Session client = new TcpClientSession(downstreamHost, downstreamPort, minecraftProtocol);
 
         SessionService sessionService = new SessionService();
         sessionService.setProxy(Proxy.NO_PROXY);
 
-        return session;
+        return client;
     }
 
     /**

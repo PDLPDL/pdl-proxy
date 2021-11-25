@@ -24,7 +24,7 @@ import com.github.steveice10.packetlib.event.server.ServerClosingEvent;
 import com.github.steveice10.packetlib.event.server.ServerListener;
 import com.github.steveice10.packetlib.event.server.SessionAddedEvent;
 import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
-import com.github.steveice10.packetlib.tcp.TcpSessionFactory;
+import com.github.steveice10.packetlib.tcp.TcpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +91,7 @@ public class HollowMinecraftServer {
 //----------------------------------------
 
     public void start() {
-        this.server = new Server(this.listenHost, this.listenPort, MinecraftProtocol.class, new TcpSessionFactory());
+        this.server = new TcpServer(this.listenHost, this.listenPort, MinecraftProtocol.class);
 
         this.server.setGlobalFlag(VERIFY_USERS_KEY, true);
         this.server.setGlobalFlag(SERVER_COMPRESSION_THRESHOLD, 100);

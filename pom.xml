@@ -39,9 +39,9 @@
         <commons-cli.version>1.4</commons-cli.version>
         <immutable-utils.version>1.0.0</immutable-utils.version>
         <jackson.version>2.10.3</jackson.version>
-        <minecraft-protocol-lib.version>1.16.4-1</minecraft-protocol-lib.version>
+        <minecraft-protocol-lib.version>1.17.1-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
-        <packetlib.version>1.7</packetlib.version>
+        <packetlib.version>2.0</packetlib.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring-boot.version>2.2.6.RELEASE</spring-boot.version>
     </properties>
