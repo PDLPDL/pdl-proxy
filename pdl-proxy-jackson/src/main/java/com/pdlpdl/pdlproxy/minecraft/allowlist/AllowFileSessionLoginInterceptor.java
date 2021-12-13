@@ -3,12 +3,18 @@ package com.pdlpdl.pdlproxy.minecraft.allowlist;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.steveice10.mc.auth.data.GameProfile;
+import com.github.steveice10.mc.protocol.packet.login.server.LoginDisconnectPacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
+import com.github.steveice10.packetlib.Session;
+import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
+import com.github.steveice10.packetlib.event.session.PacketSentEvent;
+import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.api.AllowListControl;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.model.AllowListEntry;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.model.AllowListFile;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
+import net.kyori.adventure.text.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Simple file-based implementation of a SessionLoginInterceptor, reading and writing allow entries to a json-formatted
@@ -148,13 +156,67 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
             this.log.debug("ALLOW LIST = {}", this.allowListEntries);
 
             packetSendingEvent.setCancelled(true);
-            packetSendingEvent.getSession().disconnect("Player is not on the allow-list");
+
+            this.disconnectAndSendReason(packetSendingEvent.getSession(), "Player is not on the server allow list: player-name=" + playerName);
         }
     }
 
 //========================================
 //
 //----------------------------------------
+
+    /**
+     * Disconnect the session after sending a reason to the client.  Note that the session.disconnect() method must not
+     * be called until the reason packet has had a chance to be sent; otherwise, it won't make it.
+     *
+     * @param session
+     * @param reason
+     */
+    private void disconnectAndSendReason(Session session, String reason) {
+        Component textComponent = Component.text(reason);
+
+        // Prepare the disconnect reason for the client.
+        LoginDisconnectPacket loginDisconnectPacket = new LoginDisconnectPacket(textComponent);
+
+        CountDownLatch finishDisconnectLatch = new CountDownLatch(1);
+
+        // Listen to the session for the disconnect packet being delivered.  Defer the final session.disconnect() until
+        //  this is observed to minimize the chance the client will not get the disconnect reason.
+        session.addListener(new SessionAdapter() {
+            @Override
+            public void packetSent(PacketSentEvent event) {
+                if (event.getPacket() == loginDisconnectPacket) {
+                    finishDisconnectLatch.countDown();
+                }
+            }
+
+            @Override
+            public void disconnected(DisconnectedEvent event) {
+                // No reason left to wait
+                finishDisconnectLatch.countDown();
+            }
+        });
+
+        // Send the disconnect packet now.
+        session.send(loginDisconnectPacket);
+
+        // Start the thread that finishes the disconnect on the session.
+        Thread finishDisconnectThread =
+                new Thread(() -> this.finishDisconnectOnLatch(finishDisconnectLatch, session, reason));
+
+        finishDisconnectThread.start();
+    }
+
+    private void finishDisconnectOnLatch(CountDownLatch latch, Session session, String reason) {
+        try {
+            latch.await(3000, TimeUnit.MILLISECONDS);
+        } catch (Exception exc) {
+            this.log.info("Exception on wait to finish disconnect", exc);
+        }
+
+        // Finalize the disconnect.
+        session.disconnect(reason);
+    }
 
     private void checkLoad() {
         synchronized (this.lock) {
