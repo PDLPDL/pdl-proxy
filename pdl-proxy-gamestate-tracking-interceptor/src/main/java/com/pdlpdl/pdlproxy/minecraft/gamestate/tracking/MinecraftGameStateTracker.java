@@ -1,11 +1,11 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking;
 
-import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
-import com.github.steveice10.mc.protocol.data.game.chunk.Column;
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
-import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
+import com.github.steveice10.mc.protocol.data.game.chunk.ChunkSection;
+import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.*;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -78,11 +78,24 @@ public class MinecraftGameStateTracker {
                         .updatePlayerHealth(this.minecraftGameState, health, saturation, food));
     }
 
-    public MinecraftGameState chunkLoaded(ServerChunkDataPacket chunkDataPacket) {
-        Column column = chunkDataPacket.getColumn();
+    public MinecraftGameState updatedMinY(int minY) {
+        return  this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .updateMinY(this.minecraftGameState, minY)
+        );
+    }
+    public MinecraftGameState clearChunks() {
+        return  this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .clearChunks(this.minecraftGameState)
+        );
+    }
 
-        ChunkPosition chunkPosition = new ChunkPosition(column.getX() * 16, column.getZ() * 16);
-        Chunk[] chunkSections = chunkDataPacket.getColumn().getChunks();
+    public MinecraftGameState chunkLoaded(ClientboundLevelChunkWithLightPacket chunkDataPacket, List<ChunkSection> chunkSections) {
+        ChunkPosition chunkPosition = new ChunkPosition(chunkDataPacket.getX() * 16, chunkDataPacket.getZ() * 16);
+
+        // TODO: use entity info too
+        // BlockEntityInfo[] blockEntityArray = chunkDataPacket.getBlockEntities();
 
         ImmutableChunkSectionFacade[] immutableChunkSections = this.convertChunksArrayToImmutables(chunkSections);
 
@@ -93,7 +106,7 @@ public class MinecraftGameStateTracker {
     }
 
     public MinecraftGameState chunkUnloaded(int x, int z) {
-        ChunkPosition chunkPosition = new ChunkPosition(x, z);
+        ChunkPosition chunkPosition = new ChunkPosition(x * 16, z * 16);
 
         return  this.updateCommon(
                 () -> this.minecraftGameStateMutationUtils
@@ -108,7 +121,7 @@ public class MinecraftGameStateTracker {
         );
     }
 
-    public MinecraftGameState multipleBlocksChanged(int chunkX, int chunkZ, BlockChangeRecord[] blockChangeRecords) {
+    public MinecraftGameState multipleBlocksChanged(int chunkX, int chunkZ, BlockChangeEntry[] blockChangeRecords) {
         return  this.updateCommon(
                 () -> this.minecraftGameStateMutationUtils
                         .updateMultipleBlocks(this.minecraftGameState, chunkX, chunkZ, blockChangeRecords)
@@ -125,19 +138,12 @@ public class MinecraftGameStateTracker {
         return result;
     }
 
-    private ImmutableChunkSectionFacade[] convertChunksArrayToImmutables(Chunk[] arr) {
-        ImmutableChunkSectionFacade[] result = new ImmutableChunkSectionFacade[arr.length];
-
-        int cur = 0;
-        while (cur < arr.length) {
-            if (arr[cur] != null) {
-                result[cur] = new ImmutableChunkSectionFacade(arr[cur]);
-            } else {
-                result[cur] = null;
-            }
-
-            cur++;
-        }
+    private ImmutableChunkSectionFacade[] convertChunksArrayToImmutables(List<ChunkSection> chunkSections) {
+        ImmutableChunkSectionFacade[] result =
+                chunkSections
+                        .stream()
+                        .map((oneChunkSection) -> new ImmutableChunkSectionFacade(oneChunkSection.getChunkData(), oneChunkSection.getBiomeData()))
+                        .toArray(ImmutableChunkSectionFacade[]::new);
 
         return result;
     }

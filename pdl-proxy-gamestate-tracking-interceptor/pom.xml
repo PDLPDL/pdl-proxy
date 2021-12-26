@@ -50,8 +50,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.Steveice10</groupId>
-            <artifactId>MCProtocolLib</artifactId>
+            <groupId>com.github.steveice10</groupId>
+            <artifactId>mcprotocollib</artifactId>
         </dependency>
 
         <!-- UNIT TESTING -->

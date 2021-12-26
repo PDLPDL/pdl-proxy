@@ -61,6 +61,7 @@ public class ProxyServerImpl implements ProxyServer {
     //
     private String serverListenHost;
     private int serverListenPort;
+    private boolean serverOnlineMode = true;
 
     private String downstreamServerHostname;
     private int downstreamServerPort;
@@ -126,6 +127,14 @@ public class ProxyServerImpl implements ProxyServer {
         this.loginInterceptorList = loginInterceptorList;
     }
 
+    public boolean isServerOnlineMode() {
+        return serverOnlineMode;
+    }
+
+    public void setServerOnlineMode(boolean serverOnlineMode) {
+        this.serverOnlineMode = serverOnlineMode;
+    }
+
 //========================================
 // Proxy Server Interface
 //----------------------------------------
@@ -177,6 +186,7 @@ public class ProxyServerImpl implements ProxyServer {
         this.hollowMinecraftServer = new HollowMinecraftServer();
         this.hollowMinecraftServer.setListenHost(this.serverListenHost);
         this.hollowMinecraftServer.setListenPort(this.serverListenPort);
+        this.hollowMinecraftServer.setOnlineMode(this.serverOnlineMode);
         this.hollowMinecraftServer.setOnSessionAdded(this::handleSessionAdded);
         this.hollowMinecraftServer.setOnSessionRemoved(this::handleSessionRemoved);
     }

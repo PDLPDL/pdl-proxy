@@ -44,6 +44,7 @@ public class HollowMinecraftServer {
 
     private String listenHost = "0.0.0.0";
     private int listenPort = 7777;
+    private boolean onlineMode = true;
 
     private Server server;
 
@@ -86,14 +87,27 @@ public class HollowMinecraftServer {
         this.onSessionRemoved = onSessionRemoved;
     }
 
+    public boolean isOnlineMode() {
+        return onlineMode;
+    }
+
+    public void setOnlineMode(boolean onlineMode) {
+        this.onlineMode = onlineMode;
+    }
+
 //========================================
 // Operation
 //----------------------------------------
 
     public void start() {
-        this.server = new TcpServer(this.listenHost, this.listenPort, MinecraftProtocol.class);
+        this.server = new TcpServer(this.listenHost, this.listenPort, MinecraftProtocol::new);
 
-        this.server.setGlobalFlag(VERIFY_USERS_KEY, true);
+        if (this.onlineMode) {
+            this.server.setGlobalFlag(VERIFY_USERS_KEY, true);
+        } else {
+            this.server.setGlobalFlag(VERIFY_USERS_KEY, false);
+        }
+
         this.server.setGlobalFlag(SERVER_COMPRESSION_THRESHOLD, 100);
         // server.setGlobalFlag(SERVER_INFO_BUILDER_KEY, (ServerInfoBuilder) session -> SERVER_INFO);
         // server.setGlobalFlag(SERVER_LOGIN_HANDLER_KEY, (ServerLoginHandler) session -> session.send(JOIN_GAME_PACKET));

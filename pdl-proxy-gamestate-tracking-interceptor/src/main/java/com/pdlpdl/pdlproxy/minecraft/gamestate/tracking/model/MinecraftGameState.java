@@ -16,7 +16,7 @@ import java.util.HashMap;
                 "minecraftWorldBlockState"
         })
 public class MinecraftGameState {
-    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, true, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>()));
+    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, true, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>(), 0));
 
     private final int playerEntityId;
     private final Position playerPosition;
@@ -49,7 +49,7 @@ public class MinecraftGameState {
         this.playerFood       = playerFood;
 
         if (minecraftWorldBlockState == null) {
-            minecraftWorldBlockState = new MinecraftWorldBlockState(null);
+            minecraftWorldBlockState = new MinecraftWorldBlockState(null, 0);
         }
 
         this.minecraftWorldBlockState = minecraftWorldBlockState;

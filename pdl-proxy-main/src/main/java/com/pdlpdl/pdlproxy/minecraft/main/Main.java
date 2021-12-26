@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 public class Main {
     public static final String DEFAULT_LISTEN_HOST = "0.0.0.0";
     public static final int DEFAULT_LIST_PORT = 7777;
+    public static final boolean DEFAULT_ONLINE_MODE = true;
 
     public static final String DEFAULT_FORWARD_HOST = "localhost";
     public static final int DEFAULT_FORWARD_PORT = 25565;
@@ -50,6 +51,7 @@ public class Main {
 
     private String listenHost = DEFAULT_LISTEN_HOST;
     private int listenPort = DEFAULT_LIST_PORT;
+    private boolean onlineMode = DEFAULT_ONLINE_MODE;
     private String forwardHost = DEFAULT_FORWARD_HOST;
     private int forwardPort = DEFAULT_FORWARD_PORT;
 
@@ -114,6 +116,14 @@ public class Main {
             //
             this.enablePoc = commandLine.hasOption("P");
 
+            if (commandLine.hasOption("a")) {
+                this.onlineMode = true;
+            }
+
+            if (commandLine.hasOption("b")) {
+                this.onlineMode = false;
+            }
+
         } catch (ParseException parseExc) {
             this.displayHelp(System.out, commandLineOptions);
             this.log.error("Command-line argument failure", parseExc);
@@ -123,6 +133,8 @@ public class Main {
     private Options prepareCommandLineOptions() {
         Options result = new Options();
 
+        result.addOption("a", "online-mode", false, "Online Mode (player auth required)");
+        result.addOption("b", "offline-mode", false, "Offline Mode (player auth is bypassed)");
         result.addOption("t", "trace", false, "Enable tracing of packets to file");
         result.addOption("d", "trace-output-dir", true, "Output directory into which tracing files will be written (see --trace)");
         result.addOption("c", "compress", false, "Compress the tracing files (see --trace)");
@@ -168,6 +180,7 @@ public class Main {
 
         proxyServer.setServerListenHost(this.listenHost);
         proxyServer.setServerListenPort(this.listenPort);
+        proxyServer.setServerOnlineMode(this.onlineMode);
 
         proxyServer.setDownstreamServerHostname(this.forwardHost);
         proxyServer.setDownstreamServerPort(this.forwardPort);

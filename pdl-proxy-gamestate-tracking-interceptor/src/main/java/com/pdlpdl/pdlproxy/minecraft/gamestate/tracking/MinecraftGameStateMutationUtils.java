@@ -2,8 +2,7 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking;
 
 import com.artnaseef.immutable.utils.MutationUtils;
 import com.artnaseef.immutable.utils.Mutator;
-import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.*;
 
 import java.util.HashMap;
@@ -136,6 +135,24 @@ public class MinecraftGameStateMutationUtils {
 //========================================
 
     /**
+     * Update the game state with the Min Y setting received from the server.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param
+     * @return the updated game state.
+     */
+    public MinecraftGameState updateMinY(MinecraftGameState orig, int newMinY) {
+        Mutator worldBlockStateMutator =
+                this.mutationUtils.makeAnchoredPathMutator(
+                        (origWorldBlockStateSupplier) ->
+                                ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).updateMinY(newMinY),
+                        MinecraftGameState.class,
+                        "minecraftWorldBlockState");
+
+        return this.mutationUtils.mutateDeep(orig, worldBlockStateMutator);
+    }
+
+    /**
      * Update the game state with the chunk data received from the server.  Any existing data for the chunk, including
      * overrides, is replaced.
      *
@@ -144,7 +161,8 @@ public class MinecraftGameStateMutationUtils {
      * @return the updated game state.
      */
     public MinecraftGameState updateChunk(MinecraftGameState orig, ChunkPosition chunkPosition, ImmutableChunkSectionFacade[] chunkSections) {
-        MinecraftChunkBlockState updatedBlockState = new MinecraftChunkBlockState(chunkPosition, chunkSections, new HashMap<>());
+        int minY = orig.getMinecraftWorldBlockState().getMinY();
+        MinecraftChunkBlockState updatedBlockState = new MinecraftChunkBlockState(chunkPosition, minY, chunkSections, new HashMap<>());
 
         Mutator worldBlockStateMutator =
                 this.mutationUtils.makeAnchoredPathMutator(
@@ -168,6 +186,24 @@ public class MinecraftGameStateMutationUtils {
                 this.mutationUtils.makeAnchoredPathMutator(
                         (origWorldBlockStateSupplier) ->
                                 ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).unloadChunk(chunkPosition),
+                        MinecraftGameState.class,
+                        "minecraftWorldBlockState");
+
+        return this.mutationUtils.mutateDeep(orig, worldBlockStateMutator);
+    }
+
+    /**
+     * Update the game state to Clear all loaded chunks.  Occurs on respawn.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param
+     * @return the updated game state.
+     */
+    public MinecraftGameState clearChunks(MinecraftGameState orig) {
+        Mutator worldBlockStateMutator =
+                this.mutationUtils.makeAnchoredPathMutator(
+                        (origWorldBlockStateSupplier) ->
+                                ((MinecraftWorldBlockState) origWorldBlockStateSupplier.get()).clearChunks(),
                         MinecraftGameState.class,
                         "minecraftWorldBlockState");
 
@@ -199,7 +235,7 @@ public class MinecraftGameStateMutationUtils {
      * @param
      * @return the updated game state.
      */
-    public MinecraftGameState updateMultipleBlocks(MinecraftGameState orig, int chunkX, int chunkZ, BlockChangeRecord[] changeRecords) {
+    public MinecraftGameState updateMultipleBlocks(MinecraftGameState orig, int chunkX, int chunkZ, BlockChangeEntry[] changeRecords) {
         Mutator worldBlockStateMutator =
                 this.mutationUtils.makeAnchoredPathMutator(
                         (origWorldBlockStateSupplier) ->

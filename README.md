@@ -70,3 +70,16 @@ Server without modifying the Server.
         -P,--POC                       Enable Proof-Of-Concept Code
         -t,--trace                     Enable tracing of packets to file
 
+# DEVELOPER NOTES
+
+* Remember that time it took a few days to get 1.18-1 working?  Here's what happened:
+
+	- ServerListener in MCProtocolLib...
+
+                protocol.enableEncryption(key);
+
+	  Needed to be...
+
+                session.enableEncryption(protocol.enableEncryption(key));
+
+	  And then 1.18-2 fixed it.

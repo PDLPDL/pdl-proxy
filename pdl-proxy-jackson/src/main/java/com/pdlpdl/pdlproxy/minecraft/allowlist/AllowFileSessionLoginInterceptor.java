@@ -3,13 +3,13 @@ package com.pdlpdl.pdlproxy.minecraft.allowlist;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.steveice10.mc.auth.data.GameProfile;
-import com.github.steveice10.mc.protocol.packet.login.server.LoginDisconnectPacket;
-import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundGameProfilePacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundLoginDisconnectPacket;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
-import com.github.steveice10.packetlib.event.session.PacketSentEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
+import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.api.AllowListControl;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.model.AllowListEntry;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.model.AllowListFile;
@@ -130,7 +130,7 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         //
         // Get the player info
         //
-        LoginSuccessPacket loginSuccessPacket = packetSendingEvent.getPacket();
+        ClientboundGameProfilePacket loginSuccessPacket = packetSendingEvent.getPacket();
         GameProfile gameProfile = loginSuccessPacket.getProfile();
         String playerName = gameProfile.getName();
 
@@ -176,7 +176,7 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         Component textComponent = Component.text(reason);
 
         // Prepare the disconnect reason for the client.
-        LoginDisconnectPacket loginDisconnectPacket = new LoginDisconnectPacket(textComponent);
+        ClientboundLoginDisconnectPacket loginDisconnectPacket = new ClientboundLoginDisconnectPacket(textComponent);
 
         CountDownLatch finishDisconnectLatch = new CountDownLatch(1);
 
@@ -184,8 +184,8 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         //  this is observed to minimize the chance the client will not get the disconnect reason.
         session.addListener(new SessionAdapter() {
             @Override
-            public void packetSent(PacketSentEvent event) {
-                if (event.getPacket() == loginDisconnectPacket) {
+            public void packetSent(Session session, Packet packet) {
+                if (packet == loginDisconnectPacket) {
                     finishDisconnectLatch.countDown();
                 }
             }

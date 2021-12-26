@@ -16,31 +16,30 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
+import com.github.steveice10.mc.auth.data.GameProfile;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.mc.protocol.data.SubProtocol;
-import com.github.steveice10.mc.protocol.packet.ingame.client.ClientKeepAlivePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerKeepAlivePacket;
-import com.github.steveice10.mc.protocol.packet.login.client.EncryptionResponsePacket;
-import com.github.steveice10.mc.protocol.packet.login.client.LoginPluginResponsePacket;
-import com.github.steveice10.mc.protocol.packet.login.client.LoginStartPacket;
-import com.github.steveice10.mc.protocol.packet.login.server.EncryptionRequestPacket;
-import com.github.steveice10.mc.protocol.packet.login.server.LoginPluginRequestPacket;
-import com.github.steveice10.mc.protocol.packet.login.server.LoginSetCompressionPacket;
-import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
+import com.github.steveice10.mc.protocol.data.ProtocolState;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundKeepAlivePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundKeepAlivePacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundCustomQueryPacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundGameProfilePacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundHelloPacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundLoginCompressionPacket;
+import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundLoginDisconnectPacket;
+import com.github.steveice10.mc.protocol.packet.login.serverbound.ServerboundCustomQueryPacket;
+import com.github.steveice10.mc.protocol.packet.login.serverbound.ServerboundHelloPacket;
+import com.github.steveice10.mc.protocol.packet.login.serverbound.ServerboundKeyPacket;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.session.ConnectedEvent;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.DisconnectingEvent;
 import com.github.steveice10.packetlib.event.session.PacketErrorEvent;
-import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
-import com.github.steveice10.packetlib.event.session.PacketSentEvent;
 import com.github.steveice10.packetlib.event.session.SessionListener;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
-import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControl;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControlSupplier;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
 import org.slf4j.Logger;
@@ -60,6 +59,10 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
     private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ProxyClientSessionAdapter.class);
     private Logger log = DEFAULT_LOGGER;
 
+    private static final Logger DEFAULT_PACKET_DATA_LOGGER = LoggerFactory.getLogger(ProxyClientSessionAdapter.class.getName() + ".packet-data");
+    private Logger packetDataLog = DEFAULT_PACKET_DATA_LOGGER;
+
+
     /**
      * Function called when an upstream client connects and a connection to the downstream server is needed.
      */
@@ -77,6 +80,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
     private DownstreamServerConnection downstreamServerConnection;
     private boolean shutdownInd;
 
+    private GameProfile downstreamGameProfile;
 
 //========================================
 // Constructor
@@ -156,9 +160,9 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 //----------------------------------------
 
     @Override
-    public void packetReceived(PacketReceivedEvent event) {
-        this.log.trace("received packet from client: class={}", event.getPacket().getClass().getName());
-        this.handlePacketReceivedFromClient(event.getPacket());
+    public void packetReceived(Session session, Packet packet) {
+        this.log.trace("received packet from client: class={}", packet.getClass().getName());
+        this.handlePacketReceivedFromClient(session, packet);
     }
 
     @Override
@@ -168,14 +172,15 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //
         // Call the Session Login Interceptor now
         //
-        if (event.getPacket() instanceof LoginSuccessPacket) {
+        if (event.getPacket() instanceof ClientboundGameProfilePacket) {
+            // Contact the Session Login Interceptor first
             this.sessionLoginInterceptor.onPlayerLoginSuccessSending(event);
         }
     }
 
     @Override
-    public void packetSent(PacketSentEvent event) {
-        this.log.trace("sent packet to client: class={}", event.getPacket().getClass().getName());
+    public void packetSent(Session session, Packet packet) {
+        this.log.trace("sent packet to client: class={}", packet.getClass().getName());
 
         if (this.shutdownInd) {
             this.log.debug("have packet-sent after shutdown: race-condition?");
@@ -185,44 +190,19 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //
         // ON client login success (i.e. transition from LOGIN to GAME state)...
         //
-        if (event.getPacket() instanceof LoginSuccessPacket) {
-            LoginSuccessPacket loginSuccessPacket = event.getPacket();
+        if (packet instanceof ClientboundGameProfilePacket) {
+            ClientboundGameProfilePacket loginSuccessPacket = (ClientboundGameProfilePacket) packet;
 
-            String username = loginSuccessPacket.getProfile().getName();
+            GameProfile gameProfile = loginSuccessPacket.getProfile();
+            String username = gameProfile.getName();
 
             //
             // START the downstream session, to the SERVER (double-check we don't already have the connection).
             //
-            if (this.downstreamServerConnection == null) {
-                IncomingClientSessionInfo incomingClientSessionInfo =
-                        new IncomingClientSessionInfo(
-                                username,
-                                this,
-                                event.getSession(),
-                                this::handlePacketReceivedFromServer,
-                                this::handlePacketSentToServer,
-                                this::handleDownstreamDisconnect
-                                );
-
-                // TODO: better make this run asynchronously
-                // TODO: otherwise delays connecting to the downstream server can timeout the client connection
-                DownstreamServerConnection newConnection =  this.startProxyServerSession.apply(incomingClientSessionInfo);
-
-                // Double-check that we didn't shutdown between the check above and now, to minimize the impact of
-                //  potential race conditions.
-                synchronized (this.sync) {
-                    if (this.shutdownInd) {
-                        newConnection.disconnect("shutdown race");
-                    } else {
-                        this.downstreamServerConnection = newConnection;
-                    }
-                }
-            } else {
-                this.log.error("INTERNAL ERROR: sent LoginSuccessPacket when downstream server connection is already active");
-            }
+            this.connectDownstream(session, username);
         }
 
-        this.handlePacketSentToClient(event.getPacket());
+        this.handlePacketSentToClient(packet);
     }
 
     @Override
@@ -247,6 +227,43 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         this.shutdown("proxy client session disconnected");
     }
 
+//========================================
+// Downstream Connection Handling
+//========================================
+
+    private void connectDownstream(Session session, String username) {
+        //
+        // START the downstream session, to the SERVER (double-check we don't already have the connection).
+        //
+        if (this.downstreamServerConnection == null) {
+            IncomingClientSessionInfo incomingClientSessionInfo =
+                    new IncomingClientSessionInfo(
+                            username,
+                            this,
+                            session,
+                            this::handlePacketReceivedFromServer,
+                            this::handlePacketSentToServer,
+                            this::handleDownstreamDisconnect
+                    );
+
+            // TODO: better make this run asynchronously
+            // TODO: otherwise delays connecting to the downstream server can timeout the client connection
+            DownstreamServerConnection newConnection =  this.startProxyServerSession.apply(incomingClientSessionInfo);
+
+            // Double-check that we didn't shutdown between the check above and now, to minimize the impact of
+            //  potential race conditions.
+            synchronized (this.sync) {
+                if (this.shutdownInd) {
+                    newConnection.disconnect("shutdown race");
+                } else {
+                    this.downstreamServerConnection = newConnection;
+                }
+            }
+        } else {
+            this.log.error("INTERNAL ERROR: sent LoginSuccessPacket when downstream server connection is already active");
+        }
+    }
+
 
 //========================================
 // PacketInterceptorControlSupplier
@@ -263,7 +280,9 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 //----------------------------------------
 
     /**
-     * Given a packet from the downstream Server, forward the packet to the upstream Client, as appropriate.
+     * Given a packet from the downstream Server, forward the packet to the upstream Client, as appropriate.  Also
+     * capture important GameProfile data that affects how subsequent data is formatted and needs to be parsed (e.g.
+     * chunk data).
      *
      * NOTE: this is where advanced logic may be added that can intercept, add, or remove packets from the flow.
      *
@@ -279,6 +298,14 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //
 
         this.log.debug("HAVE PACKET {}", packet.getClass().getSimpleName());
+        this.packetDataLog.debug("HAVE PACKET {}", packet.getClass().getSimpleName());
+        if (this.packetDataLog.isTraceEnabled()) {
+            this.packetDataLog.trace("RECEIVED PACKET DATA = {}", packet);
+        }
+
+        if (packet instanceof ClientboundGameProfilePacket) {
+            this.downstreamGameProfile = ((ClientboundGameProfilePacket) packet).getProfile();
+        }
 
         if (this.shouldForwardPacketFromServer(packet, minecraftProtocol)) {
             this.log.debug("SHOULD FORWARD PACKET {}", packet.getClass().getSimpleName());
@@ -316,7 +343,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
      *
      * @param packet
      */
-    private void handlePacketReceivedFromClient(Packet packet) {
+    private void handlePacketReceivedFromClient(Session session, Packet packet) {
         //
         // Forward the packet to the server, but ONLY if the client is in the GAME state and the packet is not a
         //  KeepAlive packet.  Also filter out all Login-related packets.
@@ -325,6 +352,10 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         this.log.debug("HAVE PACKET {}", packet.getClass().getSimpleName());
 
         MinecraftProtocol minecraftProtocol = (MinecraftProtocol) upstreamClientSession.getPacketProtocol();
+
+        if (packet instanceof ServerboundKeyPacket) {
+            this.log.debug("HAVE KEY PACKET FROM CLIENT");
+        }
 
         if (this.shouldForwardPacketFromClient(packet, minecraftProtocol)) {
             this.log.debug("SHOULD FORWARD PACKET {}", packet.getClass().getSimpleName());
@@ -344,6 +375,9 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
      */
     private void handlePacketSentToClient(Packet packet) {
         this.log.debug("PACKET SENT TO CLIENT {}", packet.getClass().getSimpleName());
+        if (this.packetDataLog.isTraceEnabled()) {
+            this.packetDataLog.trace("SENT PACKET DATA = {}", packet);
+        }
 
         MinecraftProtocol minecraftProtocol = (MinecraftProtocol) upstreamClientSession.getPacketProtocol();
 
@@ -433,18 +467,18 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
     private boolean shouldForwardPacketFromServer(Packet packet, MinecraftProtocol minecraftProtocol) {
         return (
                     (this.upstreamClientSession.isConnected()) &&
-                    (minecraftProtocol.getSubProtocol() == SubProtocol.GAME) &&
+                    (minecraftProtocol.getState() == ProtocolState.GAME) &&
                     (!(this.isLoginPacket(packet))) &&
-                    (!(packet instanceof ServerKeepAlivePacket))
+                    (!(packet instanceof ClientboundKeepAlivePacket))
         );
     }
 
     private boolean shouldForwardPacketFromClient(Packet packet, MinecraftProtocol minecraftProtocol) {
         return (
                     (this.downstreamServerConnection != null) &&
-                    (minecraftProtocol.getSubProtocol() == SubProtocol.GAME) &&
+                    (minecraftProtocol.getState() == ProtocolState.GAME) &&
                     (!this.isLoginPacket(packet)) &&
-                    (!(packet instanceof ClientKeepAlivePacket))
+                    (!(packet instanceof ServerboundKeepAlivePacket))
         );
     }
 
@@ -456,13 +490,16 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
      */
     private boolean isLoginPacket(Packet packet) {
         return (
-                        (packet instanceof LoginStartPacket) ||
-                        (packet instanceof LoginSuccessPacket) ||
-                        (packet instanceof LoginSetCompressionPacket) ||
-                        (packet instanceof LoginPluginRequestPacket) ||
-                        (packet instanceof LoginPluginResponsePacket) ||
-                        (packet instanceof EncryptionRequestPacket) ||
-                        (packet instanceof EncryptionResponsePacket)
+// Despite its name, not part of the login handshake and is sent during the GAME state.  It needs to be forwarded.
+//                        (packet instanceof ClientboundLoginPacket) ||
+                        (packet instanceof ClientboundLoginDisconnectPacket) ||
+                        (packet instanceof ClientboundHelloPacket) ||
+                        (packet instanceof ClientboundGameProfilePacket) ||
+                        (packet instanceof ClientboundLoginCompressionPacket) ||
+                        (packet instanceof ClientboundCustomQueryPacket) ||
+                        (packet instanceof ServerboundHelloPacket) ||
+                        (packet instanceof ServerboundKeyPacket) ||
+                        (packet instanceof ServerboundCustomQueryPacket)
         );
     }
 }

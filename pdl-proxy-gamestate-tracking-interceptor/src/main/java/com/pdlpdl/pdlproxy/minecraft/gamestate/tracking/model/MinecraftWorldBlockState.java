@@ -1,6 +1,6 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,17 +26,20 @@ public class MinecraftWorldBlockState {
 
 
     private final Map<ChunkPosition, MinecraftChunkBlockState> chunks;
+    private final int minY;
 
 //========================================
 // Constructor
 //========================================
 
-    public MinecraftWorldBlockState(Map<ChunkPosition, MinecraftChunkBlockState> chunks) {
+    public MinecraftWorldBlockState(Map<ChunkPosition, MinecraftChunkBlockState> chunks, int minY) {
         if (chunks == null) {
             chunks = new HashMap<>();
         }
 
         this.chunks = Collections.unmodifiableMap(new HashMap<>(chunks));
+
+        this.minY = minY;
     }
 
 //========================================
@@ -45,6 +48,10 @@ public class MinecraftWorldBlockState {
 
     public Map<ChunkPosition, MinecraftChunkBlockState> getChunks() {
         return chunks;
+    }
+
+    public int getMinY() {
+        return minY;
     }
 
     /**
@@ -75,11 +82,19 @@ public class MinecraftWorldBlockState {
 // Mutation Methods (returning "full" copies)
 //===========================================
 
+    public MinecraftWorldBlockState updateMinY(int newMinY) {
+        return new MinecraftWorldBlockState(this.chunks, newMinY);
+    }
+
+    public MinecraftWorldBlockState clearChunks() {
+        return new MinecraftWorldBlockState(null, this.minY);
+    }
+
     public MinecraftWorldBlockState placeChunk(ChunkPosition chunkPosition, MinecraftChunkBlockState minecraftChunkBlockState) {
         Map<ChunkPosition, MinecraftChunkBlockState> updatedMap = new HashMap<>(this.chunks);
         updatedMap.put(chunkPosition, minecraftChunkBlockState);
 
-        return new MinecraftWorldBlockState(updatedMap);
+        return new MinecraftWorldBlockState(updatedMap, this.minY);
     }
 
     public MinecraftWorldBlockState unloadChunk(ChunkPosition chunkPosition) {
@@ -88,7 +103,7 @@ public class MinecraftWorldBlockState {
             Map<ChunkPosition, MinecraftChunkBlockState> updatedMap = new HashMap<>(this.chunks);
             updatedMap.remove(chunkPosition);
 
-            return new MinecraftWorldBlockState(updatedMap);
+            return new MinecraftWorldBlockState(updatedMap, this.minY);
         }
 
         // Don't have the chunk in memory, so this is a no-op
@@ -138,7 +153,7 @@ public class MinecraftWorldBlockState {
         // Update the target block
         //
         updatedBlocks.put(relativeBlockPos, blockId);
-        minecraftChunkBlockState = new MinecraftChunkBlockState(chunkPosition, immutableChunkSectionFacades, updatedBlocks);
+        minecraftChunkBlockState = new MinecraftChunkBlockState(chunkPosition, this.minY, immutableChunkSectionFacades, updatedBlocks);
 
         //
         // Create a new chunk map.  Copy all of the chunks from the current state, then add in the updated one.
@@ -146,11 +161,11 @@ public class MinecraftWorldBlockState {
         Map<ChunkPosition, MinecraftChunkBlockState> updatedChunks = new HashMap<>(this.chunks);
         updatedChunks.put(chunkPosition, minecraftChunkBlockState);
 
-        return new MinecraftWorldBlockState(updatedChunks);
+        return new MinecraftWorldBlockState(updatedChunks, this.minY);
     }
 
 
-    public MinecraftWorldBlockState updateMultipleBlocks(int chunkX, int chunkZ, BlockChangeRecord[] changeRecords) {
+    public MinecraftWorldBlockState updateMultipleBlocks(int chunkX, int chunkZ, BlockChangeEntry[] changeRecords) {
         Map<BlockChunkBasedPosition, Integer> updatedBlocks = new HashMap<>();
 
         ChunkPosition chunkPosition = new ChunkPosition(chunkX, chunkZ);
@@ -182,7 +197,7 @@ public class MinecraftWorldBlockState {
         //
         // Update the chunk with the list of target blocks
         //
-        for (BlockChangeRecord oneBlockChange : changeRecords) {
+        for (BlockChangeEntry oneBlockChange : changeRecords) {
             // Calculate the block's position relative to the chunk
             BlockChunkBasedPosition relativeBlockPos =
                     this.calculateBlockRelativePositionInChunk(oneBlockChange.getPosition(), chunkPosition);
@@ -191,7 +206,7 @@ public class MinecraftWorldBlockState {
         }
 
         minecraftChunkBlockState =
-                new MinecraftChunkBlockState(chunkPosition, immutableChunkSectionFacades, updatedBlocks);
+                new MinecraftChunkBlockState(chunkPosition, this.minY, immutableChunkSectionFacades, updatedBlocks);
 
         //
         // Create a new chunk map.  Copy all of the chunks from the current state, then add in the updated one.
@@ -199,7 +214,7 @@ public class MinecraftWorldBlockState {
         Map<ChunkPosition, MinecraftChunkBlockState> updatedChunks = new HashMap<>(this.chunks);
         updatedChunks.put(chunkPosition, minecraftChunkBlockState);
 
-        return new MinecraftWorldBlockState(updatedChunks);
+        return new MinecraftWorldBlockState(updatedChunks, this.minY);
     }
 
 //========================================

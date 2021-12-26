@@ -21,9 +21,7 @@ import com.github.steveice10.packetlib.event.session.ConnectedEvent;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.DisconnectingEvent;
 import com.github.steveice10.packetlib.event.session.PacketErrorEvent;
-import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
-import com.github.steveice10.packetlib.event.session.PacketSentEvent;
 import com.github.steveice10.packetlib.event.session.SessionListener;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.ProxyPacketListener;
@@ -90,10 +88,10 @@ public class ProxyServerSessionAdapter implements SessionListener {
 //----------------------------------------
 
     @Override
-    public void packetReceived(PacketReceivedEvent event) {
-        this.log.trace("received packet from server: class={}", event.getPacket().getClass().getName());
+    public void packetReceived(Session session, Packet packet) {
+        this.log.trace("received packet from server: class={}", packet.getClass().getName());
 
-        this.handlePacketFromServer(event.getPacket());
+        this.handlePacketFromServer(packet);
     }
 
     @Override
@@ -102,10 +100,10 @@ public class ProxyServerSessionAdapter implements SessionListener {
     }
 
     @Override
-    public void packetSent(PacketSentEvent event) {
-        this.log.trace("sent packet to server: class={}", event.getPacket().getClass().getName());
+    public void packetSent(Session session, Packet packet) {
+        this.log.trace("sent packet to server: class={}", packet.getClass().getName());
 
-        this.handlePacketSentToServer(event.getPacket());
+        this.handlePacketSentToServer(packet);
     }
 
     @Override

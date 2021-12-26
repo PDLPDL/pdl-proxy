@@ -33,15 +33,15 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <pdl-mc-packet-log.version>1.0.1</pdl-mc-packet-log.version>
+        <pdl-mc-packet-log.version>2.0.0</pdl-mc-packet-log.version>
 
 
         <commons-cli.version>1.4</commons-cli.version>
         <immutable-utils.version>1.0.0</immutable-utils.version>
         <jackson.version>2.10.3</jackson.version>
-        <minecraft-protocol-lib.version>1.17.1-1</minecraft-protocol-lib.version>
+        <minecraft-protocol-lib.version>1.18-2</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
-        <packetlib.version>2.0</packetlib.version>
+        <packetlib.version>2.1</packetlib.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring-boot.version>2.2.6.RELEASE</spring-boot.version>
     </properties>
@@ -54,6 +54,8 @@
         <module>pdl-proxy-jackson</module>
         <module>pdl-proxy-tracing-interceptor</module>
         <module>pdl-proxy-gamestate-tracking-interceptor</module>
+
+        <module>pdl-proxy-devtools</module>
     </modules>
 
     <dependencyManagement>
@@ -91,12 +93,12 @@
             </dependency>
 
             <dependency>
-                <groupId>com.github.Steveice10</groupId>
-                <artifactId>MCProtocolLib</artifactId>
+                <groupId>com.github.steveice10</groupId>
+                <artifactId>mcprotocollib</artifactId>
                 <version>${minecraft-protocol-lib.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.Steveice10</groupId>
+                <groupId>com.github.steveice10</groupId>
                 <artifactId>packetlib</artifactId>
                 <version>${packetlib.version}</version>
                 <exclusions>

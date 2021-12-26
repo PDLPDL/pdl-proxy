@@ -17,9 +17,9 @@
 package com.pdlpdl.pdlproxy.minecraft.main.poc;
 
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
-import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnLivingEntityPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddMobPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundChatPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
@@ -52,20 +52,20 @@ public class PhantomBeePacketInterceptor implements PacketInterceptor {
 
     @Override
     public void onClientPacketReceived(Packet clientPacket, ProxyPacketControl proxyPacketControl) {
-        if (clientPacket instanceof ClientPlayerPositionPacket) {
-            ClientPlayerPositionPacket clientPlayerPositionPacket = (ClientPlayerPositionPacket) clientPacket;
+        if (clientPacket instanceof ServerboundMovePlayerPosPacket) {
+            ServerboundMovePlayerPosPacket clientPlayerPositionPacket = (ServerboundMovePlayerPosPacket) clientPacket;
 
             playerX = clientPlayerPositionPacket.getX();
             playerY = clientPlayerPositionPacket.getY();
             playerZ = clientPlayerPositionPacket.getZ();
         }
 
-        if (clientPacket instanceof ClientChatPacket) {
-            ClientChatPacket clientChatPacket = (ClientChatPacket) clientPacket;
+        if (clientPacket instanceof ServerboundChatPacket) {
+            ServerboundChatPacket clientChatPacket = (ServerboundChatPacket) clientPacket;
 
             if (clientChatPacket.getMessage().contains("BEE")) {
                 this.log.debug("BEE!!!");
-                ServerSpawnLivingEntityPacket spawnPhantomBeePacket = new ServerSpawnLivingEntityPacket(
+                ClientboundAddMobPacket spawnPhantomBeePacket = new ClientboundAddMobPacket(
                         entityIdGenerator.getAndIncrement(),
                         UUID.randomUUID(),
                         EntityType.BEE,
@@ -91,8 +91,8 @@ public class PhantomBeePacketInterceptor implements PacketInterceptor {
 
     @Override
     public void onPacketSentToClient(Packet clientBoundPacket) {
-        if (clientBoundPacket instanceof ServerSpawnLivingEntityPacket) {
-            ServerSpawnLivingEntityPacket spawnPacket = (ServerSpawnLivingEntityPacket) clientBoundPacket;
+        if (clientBoundPacket instanceof ClientboundAddMobPacket) {
+            ClientboundAddMobPacket spawnPacket = (ClientboundAddMobPacket) clientBoundPacket;
             if (spawnPacket.getType() == EntityType.BEE) {
                 this.log.info("BEE SPAWN sent to client!");
             }

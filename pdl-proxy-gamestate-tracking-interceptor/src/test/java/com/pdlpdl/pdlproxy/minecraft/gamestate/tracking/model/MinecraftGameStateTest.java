@@ -1,7 +1,7 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
-import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.github.steveice10.mc.protocol.data.game.chunk.DataPalette;
+import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateMutationUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,12 +58,12 @@ public class MinecraftGameStateTest {
     @Test
     public void testMutateMultipleBlocks() {
         MinecraftGameState updated = this.mutationUtils.updateMultipleBlocks(
-                this.minecraftGameState, 96, 96, new BlockChangeRecord[]{
-                        new BlockChangeRecord(
+                this.minecraftGameState, 96, 96, new BlockChangeEntry[]{
+                        new BlockChangeEntry(
                                 new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(100, 60, 100), 23),
-                        new BlockChangeRecord(
+                        new BlockChangeEntry(
                                 new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(101, 60, 100), 24),
-                        new BlockChangeRecord(
+                        new BlockChangeEntry(
                                 new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(102, 60, 100), 25)
                 });
 
@@ -72,12 +72,12 @@ public class MinecraftGameStateTest {
         assertEquals(25, updated.getMinecraftWorldBlockState().getBlock(102, 60, 100));
 
         MinecraftGameState updated2 = this.mutationUtils.updateMultipleBlocks(
-                updated, 96, 96, new BlockChangeRecord[]{
-                        new BlockChangeRecord(
+                updated, 96, 96, new BlockChangeEntry[]{
+                        new BlockChangeEntry(
                                 new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(100, 60, 100), 123),
-                        new BlockChangeRecord(
+                        new BlockChangeEntry(
                                 new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(103, 60, 100), 26),
-                        new BlockChangeRecord(
+                        new BlockChangeEntry(
                                 new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(104, 60, 100), 27)
                 });
 
@@ -93,14 +93,14 @@ public class MinecraftGameStateTest {
         //
         // Set test data and interactions
         //
-        Chunk mockChunk = Mockito.mock(Chunk.class);
-        Mockito.when(mockChunk.get(0, 0, 0)).thenReturn(100);
-        Mockito.when(mockChunk.get(1, 1, 1)).thenReturn(111);
+        DataPalette mockChunkDataPalette = Mockito.mock(DataPalette.class);
+        Mockito.when(mockChunkDataPalette.get(0, 0, 0)).thenReturn(100);
+        Mockito.when(mockChunkDataPalette.get(1, 1, 1)).thenReturn(111);
 
         ChunkPosition chunkPosition = new ChunkPosition(96, 96);
 
         ImmutableChunkSectionFacade[] sections = new ImmutableChunkSectionFacade[16];
-        sections[0] = new ImmutableChunkSectionFacade(mockChunk);
+        sections[0] = new ImmutableChunkSectionFacade(mockChunkDataPalette, null);
 
 
         //
@@ -120,7 +120,7 @@ public class MinecraftGameStateTest {
 
 
         //
-        // Execute (2): Add some updates post-chunk-load
+        // Execute (2): Add some updates post-ChunkSection-load
         //
         MinecraftGameState updated2 = this.mutationUtils.updateBlock(updated, new Position(96, 0, 96), 30);
         MinecraftGameState updated3 = this.mutationUtils.updateBlock(updated2, new Position(100, 60, 100), 31);
@@ -148,14 +148,14 @@ public class MinecraftGameStateTest {
         //
         // Set test data and interactions
         //
-        Chunk mockChunk = Mockito.mock(Chunk.class);
-        Mockito.when(mockChunk.get(0, 0, 0)).thenReturn(100);
-        Mockito.when(mockChunk.get(1, 1, 1)).thenReturn(111);
+        DataPalette mockChunkDataPalette = Mockito.mock(DataPalette.class);
+        Mockito.when(mockChunkDataPalette.get(0, 0, 0)).thenReturn(100);
+        Mockito.when(mockChunkDataPalette.get(1, 1, 1)).thenReturn(111);
 
         ChunkPosition chunkPosition = new ChunkPosition(96, 96);
 
         ImmutableChunkSectionFacade[] sections = new ImmutableChunkSectionFacade[16];
-        sections[0] = new ImmutableChunkSectionFacade(mockChunk);
+        sections[0] = new ImmutableChunkSectionFacade(mockChunkDataPalette, null);
 
 
         //

@@ -16,6 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft;
 
+import com.github.steveice10.mc.auth.data.GameProfile;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.pdlpdl.pdlproxy.minecraft.impl.ProxyServerSessionAdapter;
 
