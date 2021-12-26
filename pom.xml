@@ -33,7 +33,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <pdl-mc-packet-log.version>2.0.0</pdl-mc-packet-log.version>
+        <pdl-mc-packet-log.version>2.1.0</pdl-mc-packet-log.version>
 
 
         <commons-cli.version>1.4</commons-cli.version>
@@ -54,8 +54,6 @@
         <module>pdl-proxy-jackson</module>
         <module>pdl-proxy-tracing-interceptor</module>
         <module>pdl-proxy-gamestate-tracking-interceptor</module>
-
-        <module>pdl-proxy-devtools</module>
     </modules>
 
     <dependencyManagement>
