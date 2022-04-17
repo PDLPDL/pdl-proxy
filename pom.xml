@@ -33,13 +33,13 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <pdl-mc-packet-log.version>2.1.0</pdl-mc-packet-log.version>
+        <pdl-mc-packet-log.version>2.2.0</pdl-mc-packet-log.version>
 
 
         <commons-cli.version>1.4</commons-cli.version>
         <immutable-utils.version>1.0.0</immutable-utils.version>
         <jackson.version>2.10.3</jackson.version>
-        <minecraft-protocol-lib.version>1.18-2</minecraft-protocol-lib.version>
+        <minecraft-protocol-lib.version>1.18.2-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
         <packetlib.version>2.1</packetlib.version>
         <slf4j.version>1.7.30</slf4j.version>
