@@ -45,11 +45,11 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.steveice10</groupId>
+            <groupId>com.github.GeyserMC</groupId>
             <artifactId>mcprotocollib</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.steveice10</groupId>
+            <groupId>com.github.GeyserMC</groupId>
             <artifactId>packetlib</artifactId>
         </dependency>
 

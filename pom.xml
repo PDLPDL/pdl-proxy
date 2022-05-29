@@ -91,12 +91,12 @@
             </dependency>
 
             <dependency>
-                <groupId>com.github.steveice10</groupId>
+                <groupId>com.github.GeyserMC</groupId>
                 <artifactId>mcprotocollib</artifactId>
                 <version>${minecraft-protocol-lib.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.steveice10</groupId>
+                <groupId>com.github.GeyserMC</groupId>
                 <artifactId>packetlib</artifactId>
                 <version>${packetlib.version}</version>
                 <exclusions>
