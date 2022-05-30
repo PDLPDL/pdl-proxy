@@ -33,7 +33,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <pdl-mc-packet-log.version>2.2.0</pdl-mc-packet-log.version>
+        <pdl-mc-packet-log.version>2.3.0</pdl-mc-packet-log.version>
 
 
         <commons-cli.version>1.4</commons-cli.version>
