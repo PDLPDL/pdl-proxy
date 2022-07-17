@@ -16,6 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.interceptor;
 
+import com.github.steveice10.mc.auth.data.GameProfile;
 import com.github.steveice10.mc.protocol.data.game.chunk.ChunkSection;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundRespawnPacket;
@@ -37,6 +38,7 @@ import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.io.NetInput;
 import com.github.steveice10.packetlib.io.stream.StreamNetInput;
 import com.github.steveice10.packetlib.packet.Packet;
+import com.pdlpdl.pdlproxy.minecraft.api.GameProfileAwareInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyPacketControl;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateTracker;
@@ -74,7 +76,7 @@ import java.util.function.Consumer;
  *      - It guarantees readers of the state see consistent information (e.g. only see position information for entities that still exist)
  *      - Eliminates concurrency issues since the state cannot be mutated by concurrent threads
  */
-public class GameStateTrackingPacketInterceptor implements PacketInterceptor, GameStateTrackerProvider {
+public class GameStateTrackingPacketInterceptor implements PacketInterceptor, GameStateTrackerProvider, GameProfileAwareInterceptor {
 
     public static final String MIN_Y_CODEC_TAG = "min_y";
     public static final String HEIGHT_CODEC_TAG = "height";
@@ -101,6 +103,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
     //
     // RUNTIME STATE
     //
+    private GameProfile gameProfile;
     private MinecraftGameStateTracker minecraftGameStateTracker = new MinecraftGameStateTracker();
 
 
@@ -116,6 +119,18 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
     public void setMinecraftGameStateTracker(MinecraftGameStateTracker minecraftGameStateTracker) {
         this.minecraftGameStateTracker = minecraftGameStateTracker;
     }
+
+//========================================
+// GameProfileAwareInterceptor Operations
+//----------------------------------------
+
+    @Override
+    public void injectGameProfile(GameProfile gameProfile) {
+        this.gameProfile = gameProfile;
+
+        this.minecraftGameStateTracker.updatePlayerProfileInfo(gameProfile.getName(), gameProfile.getIdAsString());
+    }
+
 
 //========================================
 // Interceptor Operations

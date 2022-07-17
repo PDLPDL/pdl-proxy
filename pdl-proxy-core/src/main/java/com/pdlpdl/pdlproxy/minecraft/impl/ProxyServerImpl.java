@@ -271,7 +271,6 @@ public class ProxyServerImpl implements ProxyServer {
                         .injectProxyDirectPacketControl(proxyDirectPacketControl);
             }
         }
-
     }
 
     private void handleSessionRemoved(SessionRemovedEvent sessionRemovedEvent) {

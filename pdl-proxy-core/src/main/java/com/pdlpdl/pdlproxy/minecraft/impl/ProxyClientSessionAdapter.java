@@ -38,6 +38,7 @@ import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
 import com.github.steveice10.packetlib.event.session.SessionListener;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
+import com.pdlpdl.pdlproxy.minecraft.api.GameProfileAwareInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControlSupplier;
@@ -80,6 +81,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
     private DownstreamServerConnection downstreamServerConnection;
     private boolean shutdownInd;
 
+    private GameProfile upstreamGameProfile;
     private GameProfile downstreamGameProfile;
 
 //========================================
@@ -120,6 +122,9 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         return packetInterceptors;
     }
 
+    public GameProfile getDownstreamGameProfile() {
+        return downstreamGameProfile;
+    }
 
 //========================================
 // Lifecycle
@@ -193,13 +198,13 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         if (packet instanceof ClientboundGameProfilePacket) {
             ClientboundGameProfilePacket loginSuccessPacket = (ClientboundGameProfilePacket) packet;
 
-            GameProfile gameProfile = loginSuccessPacket.getProfile();
-            String username = gameProfile.getName();
+            this.upstreamGameProfile = loginSuccessPacket.getProfile();
+            String username = this.upstreamGameProfile.getName();
 
             //
             // START the downstream session, to the SERVER (double-check we don't already have the connection).
             //
-            this.connectDownstream(session, username);
+            this.connectDownstream(session, username, this.upstreamGameProfile);
         }
 
         this.handlePacketSentToClient(packet);
@@ -231,7 +236,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 // Downstream Connection Handling
 //========================================
 
-    private void connectDownstream(Session session, String username) {
+    private void connectDownstream(Session session, String username, GameProfile gameProfile) {
         //
         // START the downstream session, to the SERVER (double-check we don't already have the connection).
         //
@@ -245,6 +250,9 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
                             this::handlePacketSentToServer,
                             this::handleDownstreamDisconnect
                     );
+
+            // Inject the Game Profile into the interested interceptors.
+            this.processGameProfileAwareInterceptorInjection(gameProfile);
 
             // TODO: better make this run asynchronously
             // TODO: otherwise delays connecting to the downstream server can timeout the client connection
@@ -389,6 +397,19 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 //========================================
 // Interceptors
 //----------------------------------------
+
+    /**
+     * Inject the GameProfile into injectors with the GameProfileAwareInterceptor interface.
+     *
+     * @param gameProfile game profile to inject.
+     */
+    private void processGameProfileAwareInterceptorInjection(GameProfile gameProfile) {
+        for (PacketInterceptor onePacketInterceptor : this.packetInterceptors) {
+            if (onePacketInterceptor instanceof GameProfileAwareInterceptor) {
+                ((GameProfileAwareInterceptor) onePacketInterceptor).injectGameProfile(gameProfile);
+            }
+        }
+    }
 
     private void notifyPacketInterceptorsInstalled() {
         for (PacketInterceptor onePacketInterceptor : this.packetInterceptors) {

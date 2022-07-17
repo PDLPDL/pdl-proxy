@@ -6,6 +6,8 @@ import java.util.HashMap;
 
 @MutationUtilsImmutableProperties(
         properties = {
+                "playerName",
+                "playerId",
                 "playerEntityId",
                 "playerPosition",
                 "playerIsOnGround",
@@ -16,8 +18,10 @@ import java.util.HashMap;
                 "minecraftWorldBlockState"
         })
 public class MinecraftGameState {
-    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState(-1, null, true, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>(), 0));
+    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState("unknown", "", -1, null, true, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>(), 0));
 
+    private final String playerName;
+    private final String playerId;  // UUID
     private final int playerEntityId;
     private final Position playerPosition;
     private final boolean playerIsOnGround;
@@ -30,6 +34,8 @@ public class MinecraftGameState {
     private final MinecraftWorldBlockState minecraftWorldBlockState;
 
     public MinecraftGameState(
+            String playerName,
+            String playerId,
             int playerEntityId,
             Position playerPosition,
             boolean playerIsOnGround,
@@ -40,6 +46,8 @@ public class MinecraftGameState {
             MinecraftWorldBlockState minecraftWorldBlockState
             ) {
 
+        this.playerName       = playerName;
+        this.playerId         = playerId;
         this.playerEntityId   = playerEntityId;
         this.playerPosition   = playerPosition;
         this.playerIsOnGround = playerIsOnGround;
@@ -53,6 +61,14 @@ public class MinecraftGameState {
         }
 
         this.minecraftWorldBlockState = minecraftWorldBlockState;
+    }
+
+    public String getPlayerName() {
+        return playerName;
+    }
+
+    public String getPlayerId() {
+        return playerId;
     }
 
     public int getPlayerEntityId() {

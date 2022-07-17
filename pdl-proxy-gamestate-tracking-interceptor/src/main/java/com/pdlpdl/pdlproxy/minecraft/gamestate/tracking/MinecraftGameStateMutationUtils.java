@@ -84,6 +84,27 @@ public class MinecraftGameStateMutationUtils {
     }
 
     /**
+     * Update the player profile info, including player name and ID.
+     *
+     * @param orig original Minecraft game state to update.
+     * @param updatedPlayerName new Player Name
+     * @param updatedId new Player ID
+     * @return the updated game state.  Note the original game state is returned if the updated values are equal to the
+     * originals.
+     */
+    public MinecraftGameState updatePlayerProfileInfo(MinecraftGameState orig, String updatedPlayerName, String updatedId) {
+        Mutator playerNameMutator =
+                this.mutationUtils.makeAnchoredPathMutator((origName) -> updatedPlayerName, MinecraftGameState.class, "playerName");
+
+        Mutator playerIdMutator =
+                this.mutationUtils.makeAnchoredPathMutator((origID) -> updatedId, MinecraftGameState.class, "playerId");
+
+        Mutator fullMutator = this.mutationUtils.combineMutators(playerNameMutator, playerIdMutator);
+
+        return this.mutationUtils.mutateDeep(orig, fullMutator);
+    }
+
+    /**
      * Update both the player position and rotation in the given game state.
      *
      * @param orig original Minecraft game state to update.

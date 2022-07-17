@@ -66,6 +66,12 @@ public class MinecraftGameStateTracker {
                         .updatePlayerRotation(this.minecraftGameState, updatedRotation, updatedIsOnGround));
     }
 
+    public MinecraftGameState updatePlayerProfileInfo(String updatedPlayerName, String updatedId) {
+        return this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                        .updatePlayerProfileInfo(this.minecraftGameState, updatedPlayerName, updatedId));
+    }
+
     public MinecraftGameState updatePlayerPositionRotation(Position updatedPosition, Rotation updatedRotation, Boolean updatedIsOnGround) {
         return this.updateCommon(
                 () -> this.minecraftGameStateMutationUtils

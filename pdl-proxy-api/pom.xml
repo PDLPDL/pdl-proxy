@@ -43,6 +43,10 @@
             <groupId>com.github.GeyserMC</groupId>
             <artifactId>packetlib</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.github.GeyserMC</groupId>
+            <artifactId>mcprotocollib</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

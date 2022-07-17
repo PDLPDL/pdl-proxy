@@ -23,7 +23,7 @@ import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptor;
 import java.util.function.BiConsumer;
 
 /**
- * Session interceptor that starts and shuts down packet tracing via the GameStateTrackingPacketInterceptor.
+ * Session interceptor that starts and shuts down game state tracking via the GameStateTrackingPacketInterceptor.
  */
 public class GameStateTrackingSessionInterceptor implements SessionInterceptor {
 

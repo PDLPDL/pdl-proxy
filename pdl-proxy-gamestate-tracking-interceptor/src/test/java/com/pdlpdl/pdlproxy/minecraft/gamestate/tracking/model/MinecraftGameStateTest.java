@@ -18,6 +18,8 @@ public class MinecraftGameStateTest {
     @Before
     public void setUp() throws Exception {
         this.minecraftGameState = new MinecraftGameState(
+                "cool-gamer",
+                "64f7a3b4-445c-47bf-a54c-d44a24d69efd",
                 13,
                 new Position(1.0, 2.0, 3.0),
                 true,
