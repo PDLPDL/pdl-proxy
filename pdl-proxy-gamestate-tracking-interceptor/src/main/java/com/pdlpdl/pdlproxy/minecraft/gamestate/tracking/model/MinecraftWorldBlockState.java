@@ -1,6 +1,7 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
 import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
+import com.nukkitx.math.vector.Vector3i;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -251,7 +252,7 @@ public class MinecraftWorldBlockState {
     }
 
     private BlockChunkBasedPosition calculateBlockRelativePositionInChunk(
-            com.github.steveice10.mc.protocol.data.game.entity.metadata.Position  blockWorldPosition, ChunkPosition chunkPosition) {
+            Vector3i blockWorldPosition, ChunkPosition chunkPosition) {
 
         short relX = (short) (Math.floor(blockWorldPosition.getX()) - chunkPosition.getX());
         short relY = (short) Math.floor(blockWorldPosition.getY());

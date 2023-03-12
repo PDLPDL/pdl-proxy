@@ -17,7 +17,7 @@
 package com.pdlpdl.pdlproxy.minecraft.main.poc;
 
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddMobPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
 import com.github.steveice10.packetlib.Session;
@@ -65,7 +65,7 @@ public class PhantomBeePacketInterceptor implements PacketInterceptor {
 
             if (clientChatPacket.getMessage().contains("BEE")) {
                 this.log.debug("BEE!!!");
-                ClientboundAddMobPacket spawnPhantomBeePacket = new ClientboundAddMobPacket(
+                ClientboundAddEntityPacket spawnPhantomBeePacket = new ClientboundAddEntityPacket(
                         entityIdGenerator.getAndIncrement(),
                         UUID.randomUUID(),
                         EntityType.BEE,
@@ -91,8 +91,8 @@ public class PhantomBeePacketInterceptor implements PacketInterceptor {
 
     @Override
     public void onPacketSentToClient(Packet clientBoundPacket) {
-        if (clientBoundPacket instanceof ClientboundAddMobPacket) {
-            ClientboundAddMobPacket spawnPacket = (ClientboundAddMobPacket) clientBoundPacket;
+        if (clientBoundPacket instanceof ClientboundAddEntityPacket) {
+            ClientboundAddEntityPacket spawnPacket = (ClientboundAddEntityPacket) clientBoundPacket;
             if (spawnPacket.getType() == EntityType.BEE) {
                 this.log.info("BEE SPAWN sent to client!");
             }

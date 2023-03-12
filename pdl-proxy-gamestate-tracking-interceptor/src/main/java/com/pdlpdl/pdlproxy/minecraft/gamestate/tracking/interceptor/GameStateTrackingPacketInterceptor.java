@@ -17,6 +17,8 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.interceptor;
 
 import com.github.steveice10.mc.auth.data.GameProfile;
+import com.github.steveice10.mc.protocol.codec.MinecraftCodec;
+import com.github.steveice10.mc.protocol.codec.MinecraftCodecHelper;
 import com.github.steveice10.mc.protocol.data.game.chunk.ChunkSection;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundRespawnPacket;
@@ -35,8 +37,6 @@ import com.github.steveice10.opennbt.tag.builtin.ListTag;
 import com.github.steveice10.opennbt.tag.builtin.StringTag;
 import com.github.steveice10.opennbt.tag.builtin.Tag;
 import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.io.NetInput;
-import com.github.steveice10.packetlib.io.stream.StreamNetInput;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.api.GameProfileAwareInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
@@ -44,10 +44,11 @@ import com.pdlpdl.pdlproxy.minecraft.api.ProxyPacketControl;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateTracker;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Position;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Rotation;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -287,7 +288,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
 //========================================
 
     private void extractWorldInfo(ClientboundLoginPacket loginPacket) {
-        CompoundTag dimensionCodec = loginPacket.getDimensionCodec();
+        CompoundTag dimensionCodec = loginPacket.getRegistry();
 
         //
         // Need these values starting from 1.18 in order to properly parse + use chunk data
@@ -407,13 +408,13 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
         try {
             List<ChunkSection> result = new LinkedList<>();
 
-            NetInput netInput = new StreamNetInput(new ByteArrayInputStream(rawChunkData));
+            ByteBuf byteBuf = Unpooled.copiedBuffer(rawChunkData);
 
             int numSectionToRead = ( this.worldHeight / 16 ) + 1;
 
             int cur = 0;
             while (cur < numSectionToRead) {
-                ChunkSection oneChunkSection = ChunkSection.read(netInput, this.biomeGlobalPaletteBits);
+                ChunkSection oneChunkSection = MinecraftCodec.CODEC.getHelperFactory().get().readChunkSection(byteBuf, this.biomeGlobalPaletteBits);
 
                 result.add(oneChunkSection);
                 cur++;

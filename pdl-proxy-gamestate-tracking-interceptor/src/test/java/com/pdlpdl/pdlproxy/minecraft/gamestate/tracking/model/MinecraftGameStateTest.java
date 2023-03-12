@@ -2,6 +2,7 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
 import com.github.steveice10.mc.protocol.data.game.chunk.DataPalette;
 import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
+import com.nukkitx.math.vector.Vector3i;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateMutationUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,12 +62,9 @@ public class MinecraftGameStateTest {
     public void testMutateMultipleBlocks() {
         MinecraftGameState updated = this.mutationUtils.updateMultipleBlocks(
                 this.minecraftGameState, 96, 96, new BlockChangeEntry[]{
-                        new BlockChangeEntry(
-                                new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(100, 60, 100), 23),
-                        new BlockChangeEntry(
-                                new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(101, 60, 100), 24),
-                        new BlockChangeEntry(
-                                new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(102, 60, 100), 25)
+                        new BlockChangeEntry(Vector3i.from(100, 60, 100), 23),
+                        new BlockChangeEntry(Vector3i.from(101, 60, 100), 24),
+                        new BlockChangeEntry(Vector3i.from(102, 60, 100), 25)
                 });
 
         assertEquals(23, updated.getMinecraftWorldBlockState().getBlock(100, 60, 100));
@@ -75,12 +73,9 @@ public class MinecraftGameStateTest {
 
         MinecraftGameState updated2 = this.mutationUtils.updateMultipleBlocks(
                 updated, 96, 96, new BlockChangeEntry[]{
-                        new BlockChangeEntry(
-                                new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(100, 60, 100), 123),
-                        new BlockChangeEntry(
-                                new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(103, 60, 100), 26),
-                        new BlockChangeEntry(
-                                new com.github.steveice10.mc.protocol.data.game.entity.metadata.Position(104, 60, 100), 27)
+                        new BlockChangeEntry(Vector3i.from(100, 60, 100), 123),
+                        new BlockChangeEntry(Vector3i.from(103, 60, 100), 26),
+                        new BlockChangeEntry(Vector3i.from(104, 60, 100), 27)
                 });
 
         assertEquals(123, updated2.getMinecraftWorldBlockState().getBlock(100, 60, 100));
