@@ -50,8 +50,12 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.GeyserMC</groupId>
+            <groupId>com.github.steveice10</groupId>
             <artifactId>mcprotocollib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
         </dependency>
 
         <!-- UNIT TESTING -->

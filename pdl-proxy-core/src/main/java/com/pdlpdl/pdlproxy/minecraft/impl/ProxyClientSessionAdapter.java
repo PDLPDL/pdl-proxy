@@ -341,6 +341,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
     private void handleDownstreamDisconnect(ProxyServerSessionAdapter proxyServerSessionAdapter,
                                             DisconnectedEvent disconnectedEvent) {
 
+        log.info("Downstream disconnect: " + disconnectedEvent.getReason());
         this.shutdown("downstream disconnected: " + disconnectedEvent.getReason());
     }
 
