@@ -2,8 +2,8 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
 import com.github.steveice10.mc.protocol.data.game.chunk.DataPalette;
 import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
-import com.nukkitx.math.vector.Vector3i;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateMutationUtils;
+import org.cloudburstmc.math.vector.Vector3i;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;

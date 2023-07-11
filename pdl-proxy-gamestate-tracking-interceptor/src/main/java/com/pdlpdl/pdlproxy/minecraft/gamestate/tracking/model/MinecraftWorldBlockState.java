@@ -1,7 +1,7 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
 import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
-import com.nukkitx.math.vector.Vector3i;
+import org.cloudburstmc.math.vector.Vector3i;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
