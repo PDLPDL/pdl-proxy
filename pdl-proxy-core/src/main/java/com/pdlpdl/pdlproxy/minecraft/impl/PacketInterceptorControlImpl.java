@@ -63,6 +63,17 @@ public class PacketInterceptorControlImpl implements PacketInterceptorControl {
     }
 
     @Override
+    public void insertInterceptorBefore(int offset, PacketInterceptor insertInterceptor) {
+        synchronized (this.lock) {
+            if (offset < 0) {
+                offset = 0;
+            }
+
+            this.packetInterceptors.add(offset, insertInterceptor);
+        }
+    }
+
+    @Override
     public void insertInterceptorAfter(int offset, PacketInterceptor insertInterceptor) {
         synchronized (this.lock) {
             if (offset >= this.packetInterceptors.size()) {

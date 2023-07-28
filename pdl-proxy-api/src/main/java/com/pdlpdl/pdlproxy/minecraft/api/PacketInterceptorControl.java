@@ -28,6 +28,23 @@ public interface PacketInterceptorControl {
 
     void removeInterceptor(int offset);
     void removeInterceptor(PacketInterceptor packetInterceptor);
+
+    /**
+     * Add the given interceptor before the existing interceptor at the same position, shifting the existing (and
+     *  subsequent ones) to the right one position.
+     *
+     * @param offset the position in the list of interceptors at which to insert the new interceptor; 0 is the first position.
+     * @param insertInterceptor the interceptor to insert.
+     */
+    void insertInterceptorBefore(int offset, PacketInterceptor insertInterceptor);
+
+    /**
+     * Add the given interceptor after the existing interceptor at the same position.  Same result as
+     *  insertInterceptorBefore(offset + 1, insertInterceptor).
+     *
+     * @param offset the position in the list of interceptors after which to insert the new interceptor; 0 is the first position.
+     * @param insertInterceptor
+     */
     void insertInterceptorAfter(int offset, PacketInterceptor insertInterceptor);
     void addInterceptorAtEnd(PacketInterceptor insertInterceptor);
 }
