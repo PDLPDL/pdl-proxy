@@ -104,8 +104,10 @@ public class HollowMinecraftServer {
 
         if (this.onlineMode) {
             this.server.setGlobalFlag(VERIFY_USERS_KEY, true);
+            this.log.info("PDL PROXY SERVER -- ONLINE");
         } else {
             this.server.setGlobalFlag(VERIFY_USERS_KEY, false);
+            this.log.info("PDL PROXY SERVER -- OFFLINE");
         }
 
         this.server.setGlobalFlag(SERVER_COMPRESSION_THRESHOLD, 100);
