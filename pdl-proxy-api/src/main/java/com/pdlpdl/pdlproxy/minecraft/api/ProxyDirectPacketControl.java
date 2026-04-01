@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.api;
 
-import com.github.steveice10.packetlib.packet.Packet;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 
 public interface ProxyDirectPacketControl {
     /**

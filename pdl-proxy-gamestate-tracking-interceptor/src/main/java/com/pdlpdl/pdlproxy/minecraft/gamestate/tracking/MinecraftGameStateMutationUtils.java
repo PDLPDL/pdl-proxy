@@ -2,8 +2,8 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking;
 
 import com.artnaseef.immutable.utils.MutationUtils;
 import com.artnaseef.immutable.utils.Mutator;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.*;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
 
 import java.util.HashMap;
 import java.util.Objects;

@@ -16,8 +16,10 @@
 
 package com.pdlpdl.pdlproxy.minecraft.tracing.interceptor;
 
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.packet.Packet;
+import com.pdlpdl.pdlproxy.minecraft.tracing.util.TracingFilenameFormatter;
+import com.pdlpdl.pdlproxy.minecraft.tracing.util.TracingFilenameFormatterImpl;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 import com.pdlpdl.minecraft.packetlog.api.Clock;
 import com.pdlpdl.minecraft.packetlog.clock.SystemNanoBasedClock;
 import com.pdlpdl.minecraft.packetlog.io.ClockBasedPacketFileWriter;
@@ -31,7 +33,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.function.BiFunction;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.zip.GZIPOutputStream;
 
 public class PacketTracingInterceptor implements PacketInterceptor {
@@ -45,8 +48,7 @@ public class PacketTracingInterceptor implements PacketInterceptor {
     //
     private Clock clock = new SystemNanoBasedClock();
     private boolean useCompression = false;
-    private BiFunction<Session, Boolean, String> traceFileNameFormatter =
-            (session, useCompression) -> "trace." + session.getHost() + "." + session.getPort() + (useCompression ? ".gz" : "");
+    private TracingFilenameFormatter tracingFilenameFormatter = new TracingFilenameFormatterImpl();
 
 
     //
@@ -66,18 +68,12 @@ public class PacketTracingInterceptor implements PacketInterceptor {
         this.clock = clock;
     }
 
-    public BiFunction<Session, Boolean, String> getTraceFileNameFormatter() {
-        return traceFileNameFormatter;
+    public TracingFilenameFormatter getTracingFilenameFormatter() {
+        return tracingFilenameFormatter;
     }
 
-    /**
-     * Configure a formatter that takes a Session and returns the path to the trace file to create.  The default
-     * formats the filename "trace." + REMOTE_HOSTNAME + "." + REMOTE_PORT.
-     *
-     * @param traceFileNameFormatter
-     */
-    public void setTraceFileNameFormatter(BiFunction<Session, Boolean, String> traceFileNameFormatter) {
-        this.traceFileNameFormatter = traceFileNameFormatter;
+    public void setTracingFilenameFormatter(TracingFilenameFormatter tracingFilenameFormatter) {
+        this.tracingFilenameFormatter = tracingFilenameFormatter;
     }
 
     public boolean isUseCompression() {
@@ -101,19 +97,19 @@ public class PacketTracingInterceptor implements PacketInterceptor {
     @Override
     public void onInterceptorInstalled(Session session) {
         try {
-            String path = this.traceFileNameFormatter.apply(session, this.useCompression);
+            String path = this.tracingFilenameFormatter.formatTraceFileHostnamePort("trace.", session.getRemoteAddress(), this.useCompression);
 
             if (path != null) {
-                this.log.debug("Starting session tracing to file: remote-host={}; remote-port={}; use-compression={}; trace-file={}",
-                        session.getHost(), session.getPort(), this.useCompression, path);
+                this.log.debug("Starting session tracing to file: remote-address={}; use-compression={}; trace-file={}",
+                        session.getRemoteAddress(), this.useCompression, path);
 
                 //
                 // Prepare the packet logger that will be use to write to the file.
                 //
                 this.preparePacketLogger(path);
             } else {
-                this.log.debug("Skipping session tracing to file: remote-host={}; remote-port={}; use-compression={}",
-                        session.getHost(), session.getPort(), this.useCompression);
+                this.log.debug("Skipping session tracing to file: remote-address={}; use-compression={}",
+                        session.getRemoteAddress(), this.useCompression);
             }
         } catch (IOException ioExc) {
             this.log.error("Failed to open tracing file for new session; tracing aborted", ioExc);
@@ -191,5 +187,14 @@ public class PacketTracingInterceptor implements PacketInterceptor {
         this.packetLogger = new PacketLogger(writer);
 
         this.packetLogger.init();
+    }
+
+    private String formatTraceFileHostnamePort (SocketAddress socketAddress) {
+        if (socketAddress instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+            return inetSocketAddress.getHostName() + "." + inetSocketAddress.getPort();
+        } else {
+            return socketAddress.toString();
+        }
     }
 }

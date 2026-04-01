@@ -16,13 +16,18 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.packet.Packet;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
+import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
+
+import java.util.Set;
 
 public class DownstreamServerConnectionImpl implements DownstreamServerConnection {
 
     private final Session downstreamSession;
+    private final MinecraftProtocolStateWaiter minecraftProtocolStateWaiter;
 
 //========================================
 // Constructor
@@ -30,6 +35,7 @@ public class DownstreamServerConnectionImpl implements DownstreamServerConnectio
 
     public DownstreamServerConnectionImpl(Session downstreamSession) {
         this.downstreamSession = downstreamSession;
+        this.minecraftProtocolStateWaiter = new MinecraftProtocolStateWaiter(this.downstreamSession.getPacketProtocol());
     }
 
 //========================================
@@ -44,5 +50,22 @@ public class DownstreamServerConnectionImpl implements DownstreamServerConnectio
     @Override
     public void disconnect(String reason) {
         this.downstreamSession.disconnect(reason);
+    }
+
+    @Override
+    public void waitForState(Set<ProtocolState> targetStateSet, long expiration) {
+        this.minecraftProtocolStateWaiter.waitForOutboundStateWithTimeout(targetStateSet, expiration);
+    }
+
+    @Override
+    public void switchInboundState(ProtocolState newInboundState) {
+        MinecraftProtocol packetProtocol = this.downstreamSession.getPacketProtocol();
+        this.downstreamSession.switchInboundState(() -> packetProtocol.setInboundState(newInboundState));
+    }
+
+    @Override
+    public void switchOutboundState(ProtocolState newOutboundState) {
+        MinecraftProtocol packetProtocol = this.downstreamSession.getPacketProtocol();
+        this.downstreamSession.switchInboundState(() -> packetProtocol.setOutboundState(newOutboundState));
     }
 }

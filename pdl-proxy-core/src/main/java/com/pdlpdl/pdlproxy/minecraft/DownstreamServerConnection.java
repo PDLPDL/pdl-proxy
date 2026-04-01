@@ -16,10 +16,26 @@
 
 package com.pdlpdl.pdlproxy.minecraft;
 
-import com.github.steveice10.packetlib.packet.Packet;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
+
+import java.util.Set;
 
 public interface DownstreamServerConnection {
 
     void send(Packet packet);
-    public void disconnect(String reason);
+    void disconnect(String reason);
+    void waitForState(Set<ProtocolState> targetStateSet, long expiration);
+
+    /**
+     * Safely switch the inbound connection state.
+     * @param newInboundState
+     */
+    void switchInboundState(ProtocolState newInboundState);
+
+    /**
+     * Safely switch the outbound connection state.
+     * @param newOutboundState
+     */
+    void switchOutboundState(ProtocolState newOutboundState);
 }

@@ -1,14 +1,25 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Immutable block state within a single world chunk.  Uses the original Chunk data from the server together with the
  * set of changes to that state.
  */
 public class MinecraftChunkBlockState {
+    public static final long WARN_MIN_Y_PERIOD_LENGTH = 300L; // 5 minutes in seconds
+
+    private static final Logger LOG = LoggerFactory.getLogger(MinecraftChunkBlockState.class);
+
+    private static AtomicLong lastWarnMinYUnknown = new AtomicLong(0);  // Rate-limit the warning when minY == Integer.MIN_VALUE
+
     /**
      * X, Z coordinates of the Chunk's position in the world.
      */
@@ -82,6 +93,11 @@ public class MinecraftChunkBlockState {
      * @return
      */
     public int getChunkBlock(short x, short y, short z) {
+        if (! checkWorldMinHeightKnown()) {
+            // World height unknown; just return AIR
+            return MinecraftWorldBlockState.AIR;
+        }
+
         // Ignore Y values below the bottom of the world.
         if (y < this.minY ){
             return MinecraftWorldBlockState.AIR;
@@ -107,4 +123,31 @@ public class MinecraftChunkBlockState {
 
         return result;
     }
+
+    private boolean checkWorldMinHeightKnown() {
+        if (this.minY == Integer.MIN_VALUE) {
+            long lastUpdatedSnapshot = lastWarnMinYUnknown.get();
+            long nowTimestamp = System.nanoTime();
+            long deltaNanos = nowTimestamp - lastUpdatedSnapshot;
+            long deltaSeconds = Duration.ofNanos(deltaNanos).getSeconds();
+
+            // If elapsed > limit, alert
+            if (deltaSeconds > WARN_MIN_Y_PERIOD_LENGTH) {
+                // Make sure we didn't lose the race with another thread
+                if (lastWarnMinYUnknown.compareAndSet(lastUpdatedSnapshot, nowTimestamp)) {
+                    LOG.error("ATTEMPT to parse CHUNK data before world floor known (message rate limit = {}s)", WARN_MIN_Y_PERIOD_LENGTH);
+                }
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+//========================================
+// Internals
+//----------------------------------------
+
+
 }

@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.api;
 
-import com.github.steveice10.packetlib.Session;
+import org.geysermc.mcprotocollib.network.Session;
 
 /**
  * Interceptor of Player Sessions being added to the Proxy.

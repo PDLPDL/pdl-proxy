@@ -2,19 +2,19 @@ package com.pdlpdl.pdlproxy.minecraft.allowlist;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.github.steveice10.mc.auth.data.GameProfile;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundGameProfilePacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundLoginDisconnectPacket;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
-import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import com.github.steveice10.packetlib.packet.Packet;
+import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.PacketSendingEvent;
+import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.api.AllowListControl;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.model.AllowListEntry;
 import com.pdlpdl.pdlproxy.minecraft.allowlist.model.AllowListFile;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
 import net.kyori.adventure.text.Component;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginDisconnectPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginFinishedPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +130,7 @@ public class AllowFileSessionLoginInterceptor implements AllowListControl, Sessi
         //
         // Get the player info
         //
-        ClientboundGameProfilePacket loginSuccessPacket = packetSendingEvent.getPacket();
+        ClientboundLoginFinishedPacket loginSuccessPacket = (ClientboundLoginFinishedPacket) packetSendingEvent.getPacket();
         GameProfile gameProfile = loginSuccessPacket.getProfile();
         String playerName = gameProfile.getName();
 

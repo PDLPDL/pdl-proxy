@@ -16,22 +16,22 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.packetlib.Server;
-import com.github.steveice10.packetlib.event.server.ServerBoundEvent;
-import com.github.steveice10.packetlib.event.server.ServerClosedEvent;
-import com.github.steveice10.packetlib.event.server.ServerClosingEvent;
-import com.github.steveice10.packetlib.event.server.ServerListener;
-import com.github.steveice10.packetlib.event.server.SessionAddedEvent;
-import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
-import com.github.steveice10.packetlib.tcp.TcpServer;
+import org.geysermc.mcprotocollib.network.event.server.ServerBoundEvent;
+import org.geysermc.mcprotocollib.network.event.server.ServerClosedEvent;
+import org.geysermc.mcprotocollib.network.event.server.ServerClosingEvent;
+import org.geysermc.mcprotocollib.network.event.server.ServerListener;
+import org.geysermc.mcprotocollib.network.event.server.SessionAddedEvent;
+import org.geysermc.mcprotocollib.network.event.server.SessionRemovedEvent;
+import org.geysermc.mcprotocollib.network.server.NetworkServer;
+import org.geysermc.mcprotocollib.protocol.MinecraftConstants;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.function.Consumer;
 
-import static com.github.steveice10.mc.protocol.MinecraftConstants.SERVER_COMPRESSION_THRESHOLD;
-import static com.github.steveice10.mc.protocol.MinecraftConstants.VERIFY_USERS_KEY;
 
 /**
  * Hollow Minecraft Server which accepts connections with clients, and performs the login handshake.
@@ -46,7 +46,7 @@ public class HollowMinecraftServer {
     private int listenPort = 7777;
     private boolean onlineMode = true;
 
-    private Server server;
+    private NetworkServer server;
 
     private Consumer<SessionAddedEvent> onSessionAdded;
     private Consumer<SessionRemovedEvent> onSessionRemoved;
@@ -100,17 +100,30 @@ public class HollowMinecraftServer {
 //----------------------------------------
 
     public void start() {
-        this.server = new TcpServer(this.listenHost, this.listenPort, MinecraftProtocol::new);
+        SocketAddress socketAddress = new InetSocketAddress(this.listenHost, this.listenPort);
+        this.server = new NetworkServer(socketAddress, () -> {
+            MinecraftProtocol result = new MinecraftProtocol();
+
+            // Turn off the default listeners for the sessions on this server.  Login, configuration, and other
+            //  processing by the library are disabled.
+            result.setUseDefaultListeners(false);
+            return result;
+        });
+        this.server.setGlobalFlag(MinecraftConstants.ENCRYPT_CONNECTION, true);
 
         if (this.onlineMode) {
-            this.server.setGlobalFlag(VERIFY_USERS_KEY, true);
+            this.server.setGlobalFlag(MinecraftConstants.SHOULD_AUTHENTICATE, true);
             this.log.info("PDL PROXY SERVER -- ONLINE");
         } else {
-            this.server.setGlobalFlag(VERIFY_USERS_KEY, false);
+            this.server.setGlobalFlag(MinecraftConstants.SHOULD_AUTHENTICATE, false);
             this.log.info("PDL PROXY SERVER -- OFFLINE");
         }
 
-        this.server.setGlobalFlag(SERVER_COMPRESSION_THRESHOLD, 100);
+        this.server.setGlobalFlag(MinecraftConstants.SERVER_COMPRESSION_THRESHOLD, 100);
+
+        // Disable the library sending of blank "Known Packs" automatically; we let the real client and real server
+        //  negotiate the known packs.
+        this.server.setGlobalFlag(MinecraftConstants.SEND_BLANK_KNOWN_PACKS_RESPONSE, false);
         // server.setGlobalFlag(SERVER_INFO_BUILDER_KEY, (ServerInfoBuilder) session -> SERVER_INFO);
         // server.setGlobalFlag(SERVER_LOGIN_HANDLER_KEY, (ServerLoginHandler) session -> session.send(JOIN_GAME_PACKET));
 
@@ -163,7 +176,11 @@ public class HollowMinecraftServer {
      * @param sessionAddedEvent
      */
     private void handleSessionAdded(SessionAddedEvent sessionAddedEvent) {
-        this.log.debug("Session added from {}:{}", sessionAddedEvent.getSession().getHost(), sessionAddedEvent.getSession().getPort());
+        this.log.debug("Session added from {}", sessionAddedEvent.getSession().getRemoteAddress());
+
+        // Add out custom "server listener" (which is our server-side handling).
+        CustomServerListenerConfigurationInterceptor interceptor = new CustomServerListenerConfigurationInterceptor();
+        sessionAddedEvent.getSession().addListener(interceptor);
 
         if (this.onSessionAdded != null) {
             this.onSessionAdded.accept(sessionAddedEvent);
@@ -176,7 +193,7 @@ public class HollowMinecraftServer {
      * @param sessionRemovedEvent
      */
     private void handleSessionRemoved(SessionRemovedEvent sessionRemovedEvent) {
-        this.log.debug("Session removed from {}:{}", sessionRemovedEvent.getSession().getHost(), sessionRemovedEvent.getSession().getPort());
+        this.log.debug("Session removed from {}", sessionRemovedEvent.getSession().getRemoteAddress());
 
         if (this.onSessionRemoved != null) {
             this.onSessionRemoved.accept(sessionRemovedEvent);

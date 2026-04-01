@@ -19,6 +19,6 @@ package com.pdlpdl.pdlproxy.minecraft.api;
 public interface ProxyServer {
     void start();
     void shutdown();
-    SessionInterceptorControl getSessionInterceptorControl();
+    SessionInterceptorControl getUpstreamClientSessionInterceptorControl();
     void addSessionLoginInterceptor(SessionLoginInterceptor sessionLoginInterceptor);
 }

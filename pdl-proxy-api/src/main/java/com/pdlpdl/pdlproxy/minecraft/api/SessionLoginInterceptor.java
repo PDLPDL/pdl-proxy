@@ -1,6 +1,8 @@
 package com.pdlpdl.pdlproxy.minecraft.api;
 
-import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
+// import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
+
+import org.geysermc.mcprotocollib.network.event.session.PacketSendingEvent;
 
 public interface SessionLoginInterceptor {
     /**

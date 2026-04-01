@@ -24,7 +24,7 @@ import com.pdlpdl.pdlproxy.minecraft.impl.ProxyServerImpl;
  */
 public class ProofOfConceptProxyServerImplConfigurer {
     public void configureProofsOfConcept(ProxyServerImpl proxyServer) {
-        SessionInterceptorControl sessionInterceptorControl = proxyServer.getSessionInterceptorControl();
+        SessionInterceptorControl sessionInterceptorControl = proxyServer.getUpstreamClientSessionInterceptorControl();
 
         sessionInterceptorControl.insertInterceptorAfter(-1, new PhantomBeeSessionInterceptor());
     }

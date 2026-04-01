@@ -16,9 +16,10 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
+import com.pdlpdl.pdlproxy.minecraft.ProxyEventListener;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
 import com.pdlpdl.pdlproxy.minecraft.ProxyPacketListener;
+import org.geysermc.mcprotocollib.network.Session;
 
 import java.util.function.BiConsumer;
 
@@ -28,6 +29,7 @@ class IncomingClientSessionInfo {
     private final Session clientSession;
     private final ProxyPacketListener proxyPacketReceivedListener;
     private final ProxyPacketListener proxyPacketSentListener;
+    private final ProxyEventListener proxyPacketSendingListener;
     private final BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener;
 
 //========================================
@@ -39,14 +41,15 @@ class IncomingClientSessionInfo {
                                      Session clientSession,
                                      ProxyPacketListener proxyPacketReceivedListener,
                                      ProxyPacketListener proxyPacketSentListener,
-                                     BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener
-                                     ) {
+                                     ProxyEventListener proxyPacketSendingListener,
+                                     BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener) {
 
         this.username = username;
         this.proxyClientSessionAdapter = proxyClientSessionAdapter;
         this.clientSession = clientSession;
         this.proxyPacketReceivedListener = proxyPacketReceivedListener;
         this.proxyPacketSentListener = proxyPacketSentListener;
+        this.proxyPacketSendingListener = proxyPacketSendingListener;
         this.onDisconnectListener = onDisconnectListener;
     }
 
@@ -73,6 +76,10 @@ class IncomingClientSessionInfo {
 
     public ProxyPacketListener getProxyPacketSentListener() {
         return proxyPacketSentListener;
+    }
+
+    public ProxyEventListener getProxyPacketSendingListener() {
+        return proxyPacketSendingListener;
     }
 
     public BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> getOnDisconnectListener() {

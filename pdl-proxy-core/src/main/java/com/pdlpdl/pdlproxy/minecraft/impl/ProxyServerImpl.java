@@ -16,10 +16,10 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.server.SessionAddedEvent;
-import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
-import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.server.SessionAddedEvent;
+import org.geysermc.mcprotocollib.network.event.server.SessionRemovedEvent;
+import org.geysermc.mcprotocollib.network.event.session.PacketSendingEvent;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnectionFactory;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
@@ -69,7 +69,7 @@ public class ProxyServerImpl implements ProxyServer {
     //
     // Runtime State
     //
-    private SessionInterceptorControl sessionInterceptorControl;
+    private SessionInterceptorControl upstreamClientSessionInterceptorControl;
     private HollowMinecraftServer hollowMinecraftServer;
     private DownstreamServerConnectionFactory downstreamServerConnectionFactory;
     private Map<Session, ProxyClientSessionState> sessionStateMap = new HashMap<>();
@@ -163,8 +163,8 @@ public class ProxyServerImpl implements ProxyServer {
     }
 
     @Override
-    public SessionInterceptorControl getSessionInterceptorControl() {
-        return this.sessionInterceptorControl;
+    public SessionInterceptorControl getUpstreamClientSessionInterceptorControl() {
+        return this.upstreamClientSessionInterceptorControl;
     }
 
     @Override
@@ -179,7 +179,7 @@ public class ProxyServerImpl implements ProxyServer {
 //----------------------------------------
 
     private void prepareSessionInterceptorControl() {
-        this.sessionInterceptorControl = new SessionInterceptorControlImpl();
+        this.upstreamClientSessionInterceptorControl = new SessionInterceptorControlImpl();
     }
 
     private void prepareHollowServer() {
@@ -201,16 +201,15 @@ public class ProxyServerImpl implements ProxyServer {
 //----------------------------------------
 
     private void handleSessionAdded(SessionAddedEvent sessionAddedEvent) {
-        this.log.info("CLIENT SESSION created from {}:{}",
-                sessionAddedEvent.getSession().getHost(), sessionAddedEvent.getSession().getPort());
+        this.log.info("CLIENT SESSION created from {}", sessionAddedEvent.getSession().getRemoteAddress());
 
         Session upstreamClientSession = sessionAddedEvent.getSession();
+        PacketInterceptorControl packetInterceptorControl = new PacketInterceptorControlImpl();
 
         //
         // Apply the Session Interceptors and collect the Packet Interceptors.
         //
-        PacketInterceptorControl packetInterceptorControl = new PacketInterceptorControlImpl();
-        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+        for (SessionInterceptor sessionInterceptor : this.upstreamClientSessionInterceptorControl.getInterceptorIterable()) {
             sessionInterceptor.onSessionAdded(sessionAddedEvent.getSession(), packetInterceptorControl);
         }
 
@@ -218,8 +217,7 @@ public class ProxyServerImpl implements ProxyServer {
         // Create the Proxy Session Adapter and add it as a listener to the new Client Session.
         //
         ProxyClientSessionAdapter proxyClientSessionAdapter =
-                new ProxyClientSessionAdapter(this::connectDownstream, upstreamClientSession, packetInterceptorControl,
-                        this::executeSessionLoginInterceptors);
+                new ProxyClientSessionAdapter(this::connectDownstream, upstreamClientSession, packetInterceptorControl, this::executeSessionLoginInterceptors);
 
 
         //
@@ -228,7 +226,7 @@ public class ProxyServerImpl implements ProxyServer {
         //
         this.callDirectPacketAwareInterceptors(
                 proxyClientSessionAdapter.getProxyDirectPacketControl(),
-                sessionInterceptorControl.getInterceptorIterable(),
+                upstreamClientSessionInterceptorControl.getInterceptorIterable(),
                 packetInterceptorControl);
 
 
@@ -237,6 +235,7 @@ public class ProxyServerImpl implements ProxyServer {
         //  packets as well as connected/disconnected events).
         //
         upstreamClientSession.addListener(proxyClientSessionAdapter);
+
 
         //
         // Remember this Session
@@ -255,7 +254,7 @@ public class ProxyServerImpl implements ProxyServer {
         //
         // First do the session interceptors
         //
-        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+        for (SessionInterceptor sessionInterceptor : this.upstreamClientSessionInterceptorControl.getInterceptorIterable()) {
             if (sessionInterceptor instanceof ProxyDirectPacketControlAware) {
                 ((ProxyDirectPacketControlAware) sessionInterceptor)
                         .injectProxyDirectPacketControl(proxyDirectPacketControl);
@@ -274,8 +273,7 @@ public class ProxyServerImpl implements ProxyServer {
     }
 
     private void handleSessionRemoved(SessionRemovedEvent sessionRemovedEvent) {
-        this.log.info("CLIENT SESSION removed from {}:{}",
-                sessionRemovedEvent.getSession().getHost(), sessionRemovedEvent.getSession().getPort());
+        this.log.info("CLIENT SESSION removed from {}", sessionRemovedEvent.getSession().getRemoteAddress());
 
         Session removedSession = sessionRemovedEvent.getSession();
         ProxyClientSessionState sessionState;
@@ -294,7 +292,7 @@ public class ProxyServerImpl implements ProxyServer {
         //
         // Notify listeners of the removal
         //
-        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+        for (SessionInterceptor sessionInterceptor : this.upstreamClientSessionInterceptorControl.getInterceptorIterable()) {
             sessionInterceptor.onSessionRemoved(sessionRemovedEvent.getSession());
         }
     }
@@ -309,9 +307,10 @@ public class ProxyServerImpl implements ProxyServer {
                         incomingClientSessionInfo.getUsername(),
                         incomingClientSessionInfo.getProxyPacketReceivedListener(),
                         incomingClientSessionInfo.getProxyPacketSentListener(),
+                        incomingClientSessionInfo.getProxyPacketSendingListener(),
                         incomingClientSessionInfo.getOnDisconnectListener());
 
-        for (SessionInterceptor sessionInterceptor : this.sessionInterceptorControl.getInterceptorIterable()) {
+        for (SessionInterceptor sessionInterceptor : this.upstreamClientSessionInterceptorControl.getInterceptorIterable()) {
             sessionInterceptor.onDownstreamConnected(
                     incomingClientSessionInfo.getClientSession(),
                     incomingClientSessionInfo.getUsername());

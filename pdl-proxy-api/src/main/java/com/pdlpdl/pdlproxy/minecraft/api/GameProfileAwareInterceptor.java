@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.api;
 
-import com.github.steveice10.mc.auth.data.GameProfile;
+import org.geysermc.mcprotocollib.auth.GameProfile;
 
 /**
  * Marks an interceptor as interested in GameProfile updates.

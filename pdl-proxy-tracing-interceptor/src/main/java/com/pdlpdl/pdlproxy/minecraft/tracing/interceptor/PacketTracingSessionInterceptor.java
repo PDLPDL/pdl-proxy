@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.tracing.interceptor;
 
-import com.github.steveice10.packetlib.Session;
+import org.geysermc.mcprotocollib.network.Session;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptor;
 

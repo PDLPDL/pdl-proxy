@@ -1,7 +1,6 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
-import com.github.steveice10.mc.protocol.data.game.chunk.DataPalette;
-
+import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
 
 /**
  * Immutable wrapper for a Chunk Section (16x16x16)

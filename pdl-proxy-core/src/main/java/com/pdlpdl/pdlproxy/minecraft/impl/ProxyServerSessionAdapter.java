@@ -16,15 +16,16 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.ConnectedEvent;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.event.session.DisconnectingEvent;
-import com.github.steveice10.packetlib.event.session.PacketErrorEvent;
-import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
-import com.github.steveice10.packetlib.event.session.SessionListener;
-import com.github.steveice10.packetlib.packet.Packet;
+import com.pdlpdl.pdlproxy.minecraft.ProxyEventListener;
 import com.pdlpdl.pdlproxy.minecraft.ProxyPacketListener;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.ConnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectingEvent;
+import org.geysermc.mcprotocollib.network.event.session.PacketErrorEvent;
+import org.geysermc.mcprotocollib.network.event.session.PacketSendingEvent;
+import org.geysermc.mcprotocollib.network.event.session.SessionListener;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +40,12 @@ public class ProxyServerSessionAdapter implements SessionListener {
     private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ProxyServerSessionAdapter.class);
     private Logger log = DEFAULT_LOGGER;
 
+    private final MinecraftPacketClassifierUtil minecraftPacketClassifierUtil = new MinecraftPacketClassifierUtil();
+
     private final Session downstreamServerSession;
     private final ProxyPacketListener onPacketReceivedListener;
     private final ProxyPacketListener onPacketSentListener;
+    private final ProxyEventListener onPacketSendingListener;
 
     private BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener;
 
@@ -50,10 +54,16 @@ public class ProxyServerSessionAdapter implements SessionListener {
 // Constructor
 //----------------------------------------
 
-    public ProxyServerSessionAdapter(Session downstreamServerSession, ProxyPacketListener onPacketReceivedListener, ProxyPacketListener onPacketSentListener) {
+    public ProxyServerSessionAdapter(
+        Session downstreamServerSession,
+        ProxyPacketListener onPacketReceivedListener,
+        ProxyPacketListener onPacketSentListener,
+        ProxyEventListener onPacketSendingListener)
+    {
         this.downstreamServerSession = downstreamServerSession;
         this.onPacketReceivedListener = onPacketReceivedListener;
         this.onPacketSentListener = onPacketSentListener;
+        this.onPacketSendingListener = onPacketSendingListener;
     }
 
 
@@ -89,19 +99,24 @@ public class ProxyServerSessionAdapter implements SessionListener {
 
     @Override
     public void packetReceived(Session session, Packet packet) {
-        this.log.trace("received packet from server: class={}", packet.getClass().getName());
+        this.log.trace("received packet from server: class={}", packet.getClass().getSimpleName());
 
         this.handlePacketFromServer(packet);
     }
 
     @Override
     public void packetSending(PacketSendingEvent event) {
-        this.log.trace("sending packet to server: class={}", event.getPacket().getClass().getName());
+        this.log.trace("sending packet to server: session-outbound-state={}; class={}",
+            event.getSession().getPacketProtocol().getOutboundState(),
+            event.getPacket().getClass().getSimpleName()
+        );
+
+        this.handlePacketSendingToServer(event);
     }
 
     @Override
     public void packetSent(Session session, Packet packet) {
-        this.log.trace("sent packet to server: class={}", packet.getClass().getName());
+        this.log.trace("sent packet to server: class={}", packet.getClass().getSimpleName());
 
         this.handlePacketSentToServer(packet);
     }
@@ -144,6 +159,14 @@ public class ProxyServerSessionAdapter implements SessionListener {
      */
     private void handlePacketFromServer(Packet packet) {
         this.onPacketReceivedListener.handlePacket(packet);
+    }
+
+
+    /**
+     * Given a packet is about to be sent to the server, notify listeners.
+     */
+    private void handlePacketSendingToServer(PacketSendingEvent event) {
+        this.onPacketSendingListener.handleEvent(event);
     }
 
     /**

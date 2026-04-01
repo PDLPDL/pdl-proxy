@@ -16,39 +16,44 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.mc.auth.data.GameProfile;
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.mc.protocol.data.ProtocolState;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundKeepAlivePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundKeepAlivePacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundCustomQueryPacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundGameProfilePacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundHelloPacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundLoginCompressionPacket;
-import com.github.steveice10.mc.protocol.packet.login.clientbound.ClientboundLoginDisconnectPacket;
-import com.github.steveice10.mc.protocol.packet.login.serverbound.ServerboundCustomQueryPacket;
-import com.github.steveice10.mc.protocol.packet.login.serverbound.ServerboundHelloPacket;
-import com.github.steveice10.mc.protocol.packet.login.serverbound.ServerboundKeyPacket;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.ConnectedEvent;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.event.session.DisconnectingEvent;
-import com.github.steveice10.packetlib.event.session.PacketErrorEvent;
-import com.github.steveice10.packetlib.event.session.PacketSendingEvent;
-import com.github.steveice10.packetlib.event.session.SessionListener;
-import com.github.steveice10.packetlib.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.api.GameProfileAwareInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptor;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyDirectPacketControlSupplier;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionLoginInterceptor;
+import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.ConnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectingEvent;
+import org.geysermc.mcprotocollib.network.event.session.PacketErrorEvent;
+import org.geysermc.mcprotocollib.network.event.session.PacketSendingEvent;
+import org.geysermc.mcprotocollib.network.event.session.SessionListener;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
+import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
+import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundKeepAlivePacket;
+import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundKeepAlivePacket;
+import org.geysermc.mcprotocollib.protocol.packet.configuration.serverbound.ServerboundFinishConfigurationPacket;
+import org.geysermc.mcprotocollib.protocol.packet.cookie.clientbound.ClientboundCookieRequestPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundConfigurationAcknowledgedPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundCustomQueryPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundHelloPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginCompressionPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginDisconnectPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginFinishedPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.serverbound.ServerboundCustomQueryAnswerPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.serverbound.ServerboundHelloPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.serverbound.ServerboundKeyPacket;
+import org.geysermc.mcprotocollib.protocol.packet.login.serverbound.ServerboundLoginAcknowledgedPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -57,12 +62,18 @@ import java.util.function.Function;
  */
 public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPacketControlSupplier {
 
+    // NOTE: waiting for state should not be necessary.  It was added during upgrade when configuration state was
+    //  introduced into the protocol, and we fought with the protocol library doing some configuration work.
+    public static final long WAIT_PROTOCOL_STATE_EXPIRATION = 60_000L;
+
     private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ProxyClientSessionAdapter.class);
     private Logger log = DEFAULT_LOGGER;
 
     private static final Logger DEFAULT_PACKET_DATA_LOGGER = LoggerFactory.getLogger(ProxyClientSessionAdapter.class.getName() + ".packet-data");
     private Logger packetDataLog = DEFAULT_PACKET_DATA_LOGGER;
 
+    private final MinecraftPacketClassifierUtil minecraftPacketClassifierUtil = new MinecraftPacketClassifierUtil();
+    private final MinecraftProtocolStateWaiter upstreamClientSessionMinecraftProtocolStateWaiter;
 
     /**
      * Function called when an upstream client connects and a connection to the downstream server is needed.
@@ -89,20 +100,18 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 //----------------------------------------
 
     public ProxyClientSessionAdapter(
-            Function<IncomingClientSessionInfo, DownstreamServerConnection> startProxyServerSession,
-            Session upstreamClientSession,
-            PacketInterceptorControl packetInterceptorControl,
-            SessionLoginInterceptor sessionLoginInterceptor) {
+        Function<IncomingClientSessionInfo, DownstreamServerConnection> startProxyServerSession,
+        Session upstreamClientSession,
+        PacketInterceptorControl packetInterceptorControl,
+        SessionLoginInterceptor sessionLoginInterceptor
+    ) {
 
         this.startProxyServerSession = startProxyServerSession;
         this.upstreamClientSession = upstreamClientSession;
         this.sessionLoginInterceptor = sessionLoginInterceptor;
+        this.upstreamClientSessionMinecraftProtocolStateWaiter = new MinecraftProtocolStateWaiter(this.upstreamClientSession.getPacketProtocol());
 
-        //
-        // Initialize Packet Interceptors Array.  Result is an unmodifiable list.  Note that it is feasible the list
-        //  could be mutable - just make sure to use thread-safe operations if changing it as we could get inbound
-        //  messages concurrently from client and server.
-        //
+        // Install our interceptors.
         PacketInterceptor[] interceptors = new PacketInterceptor[packetInterceptorControl.getInterceptorCount()];
         int cur = 0;
         while (cur < packetInterceptorControl.getInterceptorCount()) {
@@ -166,18 +175,18 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 
     @Override
     public void packetReceived(Session session, Packet packet) {
-        this.log.trace("received packet from client: class={}", packet.getClass().getName());
+        this.log.trace("received packet from client: class={}", packet.getClass().getSimpleName());
         this.handlePacketReceivedFromClient(session, packet);
     }
 
     @Override
     public void packetSending(PacketSendingEvent event) {
-        this.log.trace("sending packet to client: class={}", event.getPacket().getClass().getName());
+        this.log.trace("sending packet to client: class={}; outbound-state={}", event.getPacket().getClass().getSimpleName(), event.getSession().getPacketProtocol().getOutboundState());
 
         //
         // Call the Session Login Interceptor now
         //
-        if (event.getPacket() instanceof ClientboundGameProfilePacket) {
+        if (event.getPacket() instanceof ClientboundLoginFinishedPacket) {
             // Contact the Session Login Interceptor first
             this.sessionLoginInterceptor.onPlayerLoginSuccessSending(event);
         }
@@ -185,7 +194,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 
     @Override
     public void packetSent(Session session, Packet packet) {
-        this.log.trace("sent packet to client: class={}", packet.getClass().getName());
+        this.log.trace("sent packet to client: class={}", packet.getClass().getSimpleName());
 
         if (this.shutdownInd) {
             this.log.debug("have packet-sent after shutdown: race-condition?");
@@ -195,8 +204,8 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //
         // ON client login success (i.e. transition from LOGIN to GAME state)...
         //
-        if (packet instanceof ClientboundGameProfilePacket) {
-            ClientboundGameProfilePacket loginSuccessPacket = (ClientboundGameProfilePacket) packet;
+        if (packet instanceof ClientboundLoginFinishedPacket) {
+            ClientboundLoginFinishedPacket loginSuccessPacket = (ClientboundLoginFinishedPacket) packet;
 
             this.upstreamGameProfile = loginSuccessPacket.getProfile();
             String username = this.upstreamGameProfile.getName();
@@ -248,6 +257,7 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
                             session,
                             this::handlePacketReceivedFromServer,
                             this::handlePacketSentToServer,
+                            this::handlePacketSendingToServer,
                             this::handleDownstreamDisconnect
                     );
 
@@ -297,45 +307,64 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
      * @param packet
      */
     private void handlePacketReceivedFromServer(Packet packet) {
-        MinecraftProtocol minecraftProtocol = (MinecraftProtocol) upstreamClientSession.getPacketProtocol();
+
+        MinecraftProtocol minecraftProtocol = upstreamClientSession.getPacketProtocol();
 
         //
-        // Forward the packet to the client, but ONLY if the client is in the GAME state (i.e. not still logging in) and
-        //  the packet is not a Server KeepAlive packet (our hollow server handles its own keep-alive packets).  Also
-        //  filter out all Login-related packets.
+        // Forward the packet to the client, but only if we should not filter it out.
         //
+        this.log.trace("RECEIVED PACKET FROM DOWNSTREAM SERVER {}  (upstream-outbound-state={})", packet.getClass().getSimpleName(), minecraftProtocol.getOutboundState());
+        this.packetDataLog.trace("RECEIVED PACKET FROM DOWNSTREAM SERVER {} (upstream-outbound-state={}); data={}", packet.getClass().getSimpleName(), minecraftProtocol.getOutboundState(), packet);
 
-        this.log.debug("HAVE PACKET {}", packet.getClass().getSimpleName());
-        this.packetDataLog.debug("HAVE PACKET {}", packet.getClass().getSimpleName());
-        if (this.packetDataLog.isTraceEnabled()) {
-            this.packetDataLog.trace("RECEIVED PACKET DATA = {}", packet);
-        }
-
-        if (packet instanceof ClientboundGameProfilePacket) {
-            this.downstreamGameProfile = ((ClientboundGameProfilePacket) packet).getProfile();
+        if (packet instanceof ClientboundLoginFinishedPacket) {
+            this.downstreamGameProfile = ((ClientboundLoginFinishedPacket) packet).getProfile();
         }
 
         if (this.shouldForwardPacketFromServer(packet, minecraftProtocol)) {
-            this.log.debug("SHOULD FORWARD PACKET {}", packet.getClass().getSimpleName());
+            this.log.trace("CHECKING SHOULD FORWARD DOWNSTREAM SERVER PACKET {} (upstream-outbound-state={})", packet.getClass().getSimpleName(), minecraftProtocol.getOutboundState());
             boolean sendOriginal = this.applyReceivedPacketInterceptors(packet, false);
             if (sendOriginal) {
-                this.log.debug("FORWARDING PACKET {}", packet.getClass().getSimpleName());
+                this.log.trace("FORWARDING PACKET FROM DOWNSTREAM SERVER TO UPSTREAM CLIENT {} (upstream-outbound-state={})", packet.getClass().getSimpleName(), minecraftProtocol.getOutboundState());
+
+                Set<ProtocolState> validStateSet = this.minecraftPacketClassifierUtil.getValidProtocolStateSetForPacket(packet);
+                this.upstreamClientSessionMinecraftProtocolStateWaiter.waitForOutboundStateWithTimeout(validStateSet, WAIT_PROTOCOL_STATE_EXPIRATION);
+
                 this.upstreamClientSession.send(packet);
             }
         }
     }
 
     /**
-     * Given a packet from the sent to the Server (such as those forwarded from the Client), notify listeners as-needed.
+     * Given a packet sent to the Server (such as those forwarded from the Client), notify listeners as-needed.
      *
      * @param packet
      */
     private void handlePacketSentToServer(Packet packet) {
-        MinecraftProtocol minecraftProtocol = (MinecraftProtocol) upstreamClientSession.getPacketProtocol();
+        MinecraftProtocol minecraftProtocol = upstreamClientSession.getPacketProtocol();
 
         if (this.shouldForwardPacketFromClient(packet, minecraftProtocol)) {
             this.notifySentPacketInterceptors(packet, false);
         }
+
+        // The CLIENT has finished its configuration; change the downstream client-to-server session to CONFIGURATION state.
+        if (packet instanceof ServerboundConfigurationAcknowledgedPacket) {
+            // Now set the downstream connection to CONFIGURATION state as we are done forwarding packets in the LOGIN state.
+            this.downstreamServerConnection.switchOutboundState(ProtocolState.CONFIGURATION);
+        }
+
+        // End of CONFIGURATION for the client; update the downstream server session to GAME state.
+        // Doing the update here instead of on the receive-packet handler because we need to allow the
+        //  ServerboundFinishConfigurationPacket to send BEFORE changing to GAME state.
+        if (packet instanceof ServerboundFinishConfigurationPacket) {
+            this.log.debug("Sent ServerboundFinishConfigurationPacket to downstream server; switching outbound to GAME state");
+            this.downstreamServerConnection.switchOutboundState(ProtocolState.GAME);
+        }
+    }
+
+    /**
+     * Given an event for a packet about to be sent to the server, process the event.
+     */
+    private void handlePacketSendingToServer(PacketSendingEvent event) {
     }
 
     private void handleDownstreamDisconnect(ProxyServerSessionAdapter proxyServerSessionAdapter,
@@ -358,22 +387,29 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //  KeepAlive packet.  Also filter out all Login-related packets.
         //
 
-        this.log.debug("HAVE PACKET {}", packet.getClass().getSimpleName());
+        this.log.debug("RECEIVED PACKET FROM UPSTREAM CLIENT {}", packet.getClass().getSimpleName());
 
         MinecraftProtocol minecraftProtocol = (MinecraftProtocol) upstreamClientSession.getPacketProtocol();
 
         if (packet instanceof ServerboundKeyPacket) {
-            this.log.debug("HAVE KEY PACKET FROM CLIENT");
+            this.log.debug("HAVE KEY PACKET FROM UPSTREAM CLIENT");
         }
 
         if (this.shouldForwardPacketFromClient(packet, minecraftProtocol)) {
-            this.log.debug("SHOULD FORWARD PACKET {}", packet.getClass().getSimpleName());
+            this.log.debug("SHOULD FORWARD PACKET FROM UPSTREAM CLIENT {}", packet.getClass().getSimpleName());
 
             boolean sendOriginal = this.applyReceivedPacketInterceptors(packet, true);
             if (sendOriginal) {
-                this.log.debug("FORWARDING PACKET {}", packet.getClass().getSimpleName());
+                this.log.debug("FORWARDING PACKET FROM UPSTREAM CLIENT TO DOWNSTREAM SERVER {}", packet.getClass().getSimpleName());
+
+                Set<ProtocolState> validStateSet = this.minecraftPacketClassifierUtil.getValidProtocolStateSetForPacket(packet);
+                this.downstreamServerConnection.waitForState(validStateSet, WAIT_PROTOCOL_STATE_EXPIRATION);
                 this.downstreamServerConnection.send(packet);
+            } else {
+                this.log.debug("DROPPING PACKET FROM UPSTREAM CLIENT TO DOWNSTREAM SERVER {}", packet.getClass().getSimpleName());
             }
+        } else {
+            this.log.debug("DROPPING PACKET FROM UPSTREAM CLIENT {}", packet.getClass().getSimpleName());
         }
     }
 
@@ -426,6 +462,8 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 
     private void directSendPacketToClient(Packet packet) {
         if (this.upstreamClientSession.isConnected()) {
+            this.log.debug("SENDING DIRECT PACKET TO UPSTREAM CLIENT {}", packet.getClass().getSimpleName());
+
             this.upstreamClientSession.send(packet);
         } else {
             this.log.info("Dropping direct client-bound packet; session is closed: packet-class={}", packet.getClass().getSimpleName());
@@ -456,6 +494,11 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //
         List<Packet> clientBoundInjectedPackets = proxyPacketControl.getAddedClientBoundPackets();
         for (Packet clientBoundPacket : clientBoundInjectedPackets) {
+            this.log.debug("SENDING INTERCEPTOR INJECTED PACKET TO UPSTREAM CLIENT {}", packet.getClass().getSimpleName());
+
+            Set<ProtocolState> validProtocolStateSet = this.minecraftPacketClassifierUtil.getValidProtocolStateSetForPacket(clientBoundPacket);
+            this.upstreamClientSessionMinecraftProtocolStateWaiter.waitForOutboundStateWithTimeout(validProtocolStateSet, WAIT_PROTOCOL_STATE_EXPIRATION);
+
             this.upstreamClientSession.send(clientBoundPacket);
         }
 
@@ -465,6 +508,10 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
         //
         List<Packet> serverBoundInjectedPackets = proxyPacketControl.getAddedServerBoundPackets();
         for (Packet serverBoundPacket : serverBoundInjectedPackets) {
+            this.log.debug("SENDING INTERCEPTOR INJECTED PACKET TO DOWNSTREAM SERVER {}", packet.getClass().getSimpleName());
+
+            Set<ProtocolState> validProtocolStateSet = this.minecraftPacketClassifierUtil.getValidProtocolStateSetForPacket(serverBoundPacket);
+            this.downstreamServerConnection.waitForState(validProtocolStateSet, WAIT_PROTOCOL_STATE_EXPIRATION);
             this.downstreamServerConnection.send(serverBoundPacket);
         }
 
@@ -487,21 +534,53 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
 //----------------------------------------
 
     private boolean shouldForwardPacketFromServer(Packet packet, MinecraftProtocol minecraftProtocol) {
+        log.trace("SHOULD FORWARD PACKET FROM SERVER: upstream-client-is-connected={}; inbound-state={} (want GAME/CONFIGURATION); is-login-packet={}; is-config-packet={}; is-clientbound-keepalive-packet={}; is-passthrough-state={}; packet={}",
+            this.upstreamClientSession.isConnected(),
+            minecraftProtocol.getInboundState(),
+            this.isLoginPacket(packet),
+            this.minecraftPacketClassifierUtil.isConfigurationPacket(packet),
+            (packet instanceof ClientboundKeepAlivePacket),
+            this.isPassthroughState(minecraftProtocol.getInboundState()),
+            packet.getClass().getSimpleName()
+        );
+
         return (
                     (this.upstreamClientSession.isConnected()) &&
-                    (minecraftProtocol.getState() == ProtocolState.GAME) &&
+                    (this.isPassthroughState(minecraftProtocol.getInboundState())) &&
                     (!(this.isLoginPacket(packet))) &&
                     (!(packet instanceof ClientboundKeepAlivePacket))
         );
     }
 
     private boolean shouldForwardPacketFromClient(Packet packet, MinecraftProtocol minecraftProtocol) {
+        log.trace("SHOULD FORWARD PACKET FROM CLIENT: downstream-is-connected={}; outbound-state={} (want GAME/CONFIGURATION); is-login-packet={}; is-config-packet={}; is-serverbound-keepalive-packet={}; is-passthrough-state={}; packet={}",
+            (this.downstreamServerConnection != null),
+            minecraftProtocol.getOutboundState(),
+            this.isLoginPacket(packet),
+            this.minecraftPacketClassifierUtil.isConfigurationPacket(packet),
+            (packet instanceof ServerboundKeepAlivePacket),
+            this.isPassthroughState(minecraftProtocol.getOutboundState()),
+            packet.getClass().getSimpleName()
+        );
+
         return (
                     (this.downstreamServerConnection != null) &&
-                    (minecraftProtocol.getState() == ProtocolState.GAME) &&
+                    (this.isPassthroughState(minecraftProtocol.getOutboundState())) &&
                     (!this.isLoginPacket(packet)) &&
                     (!(packet instanceof ServerboundKeepAlivePacket))
         );
+    }
+
+
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
+    private boolean isPassthroughState(ProtocolState protocolState) {
+        switch (protocolState) {
+            case GAME:
+            case CONFIGURATION:
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -512,16 +591,18 @@ public class ProxyClientSessionAdapter implements SessionListener, ProxyDirectPa
      */
     private boolean isLoginPacket(Packet packet) {
         return (
-// Despite its name, not part of the login handshake and is sent during the GAME state.  It needs to be forwarded.
-//                        (packet instanceof ClientboundLoginPacket) ||
+                        // Despite its name, not part of the login handshake and is sent during the GAME state.  It needs to be forwarded.
+                        //  (packet instanceof ClientboundLoginPacket) ||
                         (packet instanceof ClientboundLoginDisconnectPacket) ||
                         (packet instanceof ClientboundHelloPacket) ||
-                        (packet instanceof ClientboundGameProfilePacket) ||
+                        (packet instanceof ClientboundLoginFinishedPacket) ||
                         (packet instanceof ClientboundLoginCompressionPacket) ||
                         (packet instanceof ClientboundCustomQueryPacket) ||
+                        (packet instanceof ClientboundCookieRequestPacket) ||
                         (packet instanceof ServerboundHelloPacket) ||
                         (packet instanceof ServerboundKeyPacket) ||
-                        (packet instanceof ServerboundCustomQueryPacket)
+                        (packet instanceof ServerboundCustomQueryAnswerPacket) ||
+                        (packet instanceof ServerboundLoginAcknowledgedPacket)
         );
     }
 }

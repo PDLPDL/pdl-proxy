@@ -33,15 +33,15 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <pdl-mc-packet-log.version>3.0.1</pdl-mc-packet-log.version>
+        <pdl-mc-packet-log.version>3.1.1</pdl-mc-packet-log.version>
 
 
         <commons-cli.version>1.4</commons-cli.version>
         <immutable-utils.version>1.0.0</immutable-utils.version>
         <jackson.version>2.10.3</jackson.version>
-        <minecraft-protocol-lib.version>1.20-2.ASN</minecraft-protocol-lib.version> <!-- WARNING: not publicly released; please use a different version of this project -->
+        <minecraft.version>1.21.5</minecraft.version>
+        <minecraft-protocol-lib.version>${minecraft.version}-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
-        <packetlib.version>3.0</packetlib.version>
         <slf4j.version>1.7.30</slf4j.version>
         <spring-boot.version>2.2.6.RELEASE</spring-boot.version>
     </properties>
@@ -91,24 +91,9 @@
             </dependency>
 
             <dependency>
-                <groupId>com.github.steveice10</groupId>
-                <artifactId>mcprotocollib</artifactId>
+                <groupId>org.geysermc.mcprotocollib</groupId>
+                <artifactId>protocol</artifactId>
                 <version>${minecraft-protocol-lib.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>netty-all</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.netty.incubator</groupId>
-                        <artifactId>netty-incubator-transport-native-io_uring</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.github.steveice10</groupId>
-                <artifactId>packetlib</artifactId>
-                <version>${packetlib.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>io.netty</groupId>
@@ -180,6 +165,23 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>3.7.0</version>
+            </dependency>
+
+            <!-- TESTING -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>5.14.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>5.14.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-suite-engine</artifactId>
+                <version>1.14.3</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -291,7 +293,7 @@
 
         <repository>
             <id>opencollab</id>
-            <url>https://repo.opencollab.dev/main/</url>
+            <url>https://repo.opencollab.dev/maven-releases/</url>
         </repository>
     </repositories>
 

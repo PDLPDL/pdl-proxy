@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.packetlib.packet.Packet;
+import org.geysermc.mcprotocollib.network.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.api.ProxyPacketControl;
 
 import java.util.LinkedList;

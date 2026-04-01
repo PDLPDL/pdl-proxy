@@ -1,14 +1,15 @@
 package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model;
 
-import com.github.steveice10.mc.protocol.data.game.chunk.DataPalette;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockChangeEntry;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.MinecraftGameStateMutationUtils;
 import org.cloudburstmc.math.vector.Vector3i;
-import org.junit.Before;
-import org.junit.Test;
+import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class MinecraftGameStateTest {
 
@@ -16,7 +17,7 @@ public class MinecraftGameStateTest {
 
     private MinecraftGameStateMutationUtils mutationUtils;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         this.minecraftGameState = new MinecraftGameState(
                 "cool-gamer",

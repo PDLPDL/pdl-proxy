@@ -16,18 +16,25 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.mc.auth.service.SessionService;
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
-import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.tcp.TcpClientSession;
+import com.pdlpdl.pdlproxy.minecraft.ProxyEventListener;
+import org.geysermc.mcprotocollib.auth.SessionService;
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.DisconnectedEvent;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnection;
 import com.pdlpdl.pdlproxy.minecraft.DownstreamServerConnectionFactory;
 import com.pdlpdl.pdlproxy.minecraft.ProxyPacketListener;
+import org.geysermc.mcprotocollib.network.session.ClientNetworkSession;
+import org.geysermc.mcprotocollib.protocol.ClientListener;
+import org.geysermc.mcprotocollib.protocol.MinecraftConstants;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
+import org.geysermc.mcprotocollib.protocol.data.handshake.HandshakeIntent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.Proxy;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 
 public class DownstreamServerConnectionFactoryImpl implements DownstreamServerConnectionFactory {
@@ -59,12 +66,22 @@ public class DownstreamServerConnectionFactoryImpl implements DownstreamServerCo
             String username,
             ProxyPacketListener proxyPacketListener,
             ProxyPacketListener proxyPacketSentListener,
+            ProxyEventListener proxyPacketSendingListener,
             BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener
     ) {
 
-        Session session = this.prepareMinecraftSession(username);
+        ClientNetworkSession session = this.prepareMinecraftSession(username);
 
-        this.wireSessionAdapter(session, proxyPacketListener, proxyPacketSentListener, onDisconnectListener);
+        // Tell the protocol library to NOT automatically send the known-packs CONFIGURATION response; we will let
+        //  the upstream client and downstream server handle all configuration.
+        session.setFlag(MinecraftConstants.SEND_BLANK_KNOWN_PACKS_RESPONSE, false);
+
+        this.wireSessionAdapter(
+            session,
+            proxyPacketListener,
+            proxyPacketSentListener,
+            onDisconnectListener,
+            proxyPacketSendingListener);
 
         //
         // Connect now.
@@ -91,12 +108,21 @@ public class DownstreamServerConnectionFactoryImpl implements DownstreamServerCo
      * @param username ign (in-game-name) of the user connecting to the downstream server.
      * @return Client Session prepared to connect with the downstream server.
      */
-    private Session prepareMinecraftSession(String username) {
+    private ClientNetworkSession prepareMinecraftSession(String username) {
         MinecraftProtocol minecraftProtocol = new MinecraftProtocol(username);
-        Session client = new TcpClientSession(downstreamHost, downstreamPort, minecraftProtocol);
+        SocketAddress socketAddress = new InetSocketAddress(this.downstreamHost, this.downstreamPort);
+
+        // Disable the default ClientListener and use our own custom listener.
+        minecraftProtocol.setUseDefaultListeners(false);
+
+        Executor packetExecutor = Executors.newSingleThreadExecutor();
+        ClientNetworkSession client = new ClientNetworkSession(socketAddress, minecraftProtocol, packetExecutor, null, null);
+
+        // Install our custom ClientListener
+        this.wireSessionToInterceptClientListenerConfiguration(client);
 
         SessionService sessionService = new SessionService();
-        sessionService.setProxy(Proxy.NO_PROXY);
+        sessionService.setProxy(null);
 
         return client;
     }
@@ -112,13 +138,33 @@ public class DownstreamServerConnectionFactoryImpl implements DownstreamServerCo
             Session session,
             ProxyPacketListener proxyPacketListener,
             ProxyPacketListener proxyPacketSentListener,
-            BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener
+            BiConsumer<ProxyServerSessionAdapter, DisconnectedEvent> onDisconnectListener,
+            ProxyEventListener proxyEventListener
     ) {
 
         ProxyServerSessionAdapter proxyServerSessionAdapter =
-                new ProxyServerSessionAdapter(session, proxyPacketListener, proxyPacketSentListener);
+                new ProxyServerSessionAdapter(
+                    session,
+                    proxyPacketListener,
+                    proxyPacketSentListener,
+                    proxyEventListener
+                );
 
         proxyServerSessionAdapter.setOnDisconnectListener(onDisconnectListener);
         session.addListener(proxyServerSessionAdapter);
+    }
+
+    /**
+     * Given a client network session, find the ClientListener in the session's listeners and wrap it with our own
+     *  interceptor that custom handles Configuration.
+     *
+     * @param session
+     */
+    private void wireSessionToInterceptClientListenerConfiguration(ClientNetworkSession session) {
+        // Prepare a ClientListener to handle Login and other "admin" stuff for us
+        ClientListener clientListener = new ClientListener(HandshakeIntent.LOGIN);
+        CustomClientListenerConfigurationInterceptor interceptor = new CustomClientListenerConfigurationInterceptor(clientListener);
+
+        session.addListener(interceptor);
     }
 }

@@ -57,7 +57,7 @@ public class ProxyServerSessionInterceptorInjector {
      */
     public void init() {
         for (SessionInterceptor oneInterceptor : this.sessionInterceptors) {
-            this.proxyServer.getSessionInterceptorControl().addInterceptorAtEnd(oneInterceptor);
+            this.proxyServer.getUpstreamClientSessionInterceptorControl().addInterceptorAtEnd(oneInterceptor);
         }
     }
 }

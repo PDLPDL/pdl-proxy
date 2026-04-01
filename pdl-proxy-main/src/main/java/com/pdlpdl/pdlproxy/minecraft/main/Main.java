@@ -16,7 +16,8 @@
 
 package com.pdlpdl.pdlproxy.minecraft.main;
 
-import com.github.steveice10.packetlib.Session;
+import com.pdlpdl.pdlproxy.minecraft.tracing.util.TracingFilenameFormatter;
+import com.pdlpdl.pdlproxy.minecraft.tracing.util.TracingFilenameFormatterImpl;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.impl.ProxyServerImpl;
 import com.pdlpdl.pdlproxy.minecraft.main.poc.ProofOfConceptProxyServerImplConfigurer;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.net.SocketAddress;
 import java.util.function.Consumer;
 
 public class Main {
@@ -60,6 +62,8 @@ public class Main {
     private boolean enableTraceCompression = false;
 
     private boolean enablePoc = false;
+
+    private TracingFilenameFormatter tracingFilenameFormatter = new TracingFilenameFormatterImpl();
 
     public static void main(String[] args) {
         Main instance = new Main();
@@ -186,7 +190,7 @@ public class Main {
         proxyServer.setDownstreamServerPort(this.forwardPort);
 
         if (this.enableTracing) {
-            SessionInterceptorControl sessionInterceptorControl = proxyServer.getSessionInterceptorControl();
+            SessionInterceptorControl sessionInterceptorControl = proxyServer.getUpstreamClientSessionInterceptorControl();
             installTracingInterceptor(sessionInterceptorControl);
         }
 
@@ -210,7 +214,7 @@ public class Main {
                 (packetTracingInterceptor -> {
                     packetTracingInterceptor.setUseCompression(this.enableTraceCompression);
 
-                    packetTracingInterceptor.setTraceFileNameFormatter(
+                    packetTracingInterceptor.setTracingFilenameFormatter(
                             this::prepareTraceFilePath
                     );
                 })
@@ -218,7 +222,16 @@ public class Main {
         sessionInterceptorControl.insertInterceptorAfter(-1, interceptor);
     }
 
-    private String prepareTraceFilePath(Session session, Boolean useCompression) {
+    /**
+     * Format the full path for a trace file using the standard name formatter, adding the trace directory, and
+     *  creating the trace directory as-needed.
+     *
+     * @param optPrefix
+     * @param socketAddress
+     * @param useCompression
+     * @return
+     */
+    private String prepareTraceFilePath(String optPrefix, SocketAddress socketAddress, Boolean useCompression) {
         File traceDirectory = new File(this.tracingDir);
 
         try {
@@ -228,17 +241,11 @@ public class Main {
             this.log.info("Mkdirs for tracing directory failed; ignoring", exc);
         }
 
-        String basename = "trace." + session.getHost() + "." + session.getPort();
+        // TODO: use numeric extensions to avoid overwriting existing files
+        String basename = this.tracingFilenameFormatter.formatTraceFileHostnamePort(optPrefix, socketAddress, useCompression);
 
         File traceFile = new File(traceDirectory, basename);
 
-        // TODO: use numeric extensions to avoid overwriting existing files
-
-        String result = traceFile.getPath();
-        if (useCompression) {
-            result += ".gz";
-        }
-
-        return result;
+        return traceFile.getPath();
     }
 }

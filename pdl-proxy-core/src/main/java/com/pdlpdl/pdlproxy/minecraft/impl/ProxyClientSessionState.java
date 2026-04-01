@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.impl;
 
-import com.github.steveice10.packetlib.Session;
+import org.geysermc.mcprotocollib.network.Session;
 
 public class ProxyClientSessionState {
     private final Session clientSession;

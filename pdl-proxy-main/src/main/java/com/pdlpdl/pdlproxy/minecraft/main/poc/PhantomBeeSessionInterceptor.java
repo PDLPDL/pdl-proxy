@@ -16,7 +16,7 @@
 
 package com.pdlpdl.pdlproxy.minecraft.main.poc;
 
-import com.github.steveice10.packetlib.Session;
+import org.geysermc.mcprotocollib.network.Session;
 import com.pdlpdl.pdlproxy.minecraft.api.PacketInterceptorControl;
 import com.pdlpdl.pdlproxy.minecraft.api.SessionInterceptor;
 import org.slf4j.Logger;
