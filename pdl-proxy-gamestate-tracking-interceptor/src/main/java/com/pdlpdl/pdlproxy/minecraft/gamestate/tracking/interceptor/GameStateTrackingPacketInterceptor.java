@@ -314,12 +314,14 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
         Integer minY = null;
         Integer height = null;
 
-        if (nbtMap.containsKey(MIN_Y_CODEC_TAG)) {
-            minY = nbtMap.getInt(MIN_Y_CODEC_TAG);
-        }
+        if (nbtMap != null) {
+            if (nbtMap.containsKey(MIN_Y_CODEC_TAG)) {
+                minY = nbtMap.getInt(MIN_Y_CODEC_TAG);
+            }
 
-        if (nbtMap.containsKey(HEIGHT_CODEC_TAG)) {
-            height = nbtMap.getInt(HEIGHT_CODEC_TAG);
+            if (nbtMap.containsKey(HEIGHT_CODEC_TAG)) {
+                height = nbtMap.getInt(HEIGHT_CODEC_TAG);
+            }
         }
 
         // Use defaults if either of the required values are missing.
