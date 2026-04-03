@@ -39,7 +39,7 @@
         <commons-cli.version>1.4</commons-cli.version>
         <immutable-utils.version>1.0.0</immutable-utils.version>
         <jackson.version>2.10.3</jackson.version>
-        <minecraft.version>1.21.5</minecraft.version>
+        <minecraft.version>1.21.7</minecraft.version>
         <minecraft-protocol-lib.version>${minecraft.version}-1</minecraft-protocol-lib.version>
         <netty.version>4.1.45.Final</netty.version>
         <slf4j.version>1.7.30</slf4j.version>

@@ -407,8 +407,9 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
 
             int numSectionToRead = ( this.worldHeight / 16 ) + 1;
 
+            // Read until we have all of the sections for the chunk, or we run out of data from the server.
             int cur = 0;
-            while (cur < numSectionToRead) {
+            while ((cur < numSectionToRead) && (byteBuf.isReadable())) {
                 ChunkSection oneChunkSection = MinecraftTypes.readChunkSection(byteBuf);
 
                 result.add(oneChunkSection);
