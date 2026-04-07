@@ -74,9 +74,6 @@ public class PhantomBeePacketInterceptor implements PacketInterceptor {
                         playerZ + 2,
                         0,
                         0,
-                        0,
-                        0,
-                        0,
                         0
                 );
                 proxyPacketControl.addPacketToClient(spawnPhantomBeePacket);

@@ -19,6 +19,7 @@ package com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.interceptor;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.datagen.MinecraftDatagenManager;
 import com.pdlpdl.pdlproxy.minecraft.gamestate.datagen.model.DatagenDimensionType;
 import org.cloudburstmc.nbt.NbtMap;
+import org.cloudburstmc.nbt.NbtType;
 import org.geysermc.mcprotocollib.network.Session;
 import org.geysermc.mcprotocollib.network.packet.Packet;
 import com.pdlpdl.pdlproxy.minecraft.api.GameProfileAwareInterceptor;
@@ -30,6 +31,7 @@ import com.pdlpdl.pdlproxy.minecraft.gamestate.tracking.model.Rotation;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.geysermc.mcprotocollib.auth.GameProfile;
+import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
 import org.geysermc.mcprotocollib.protocol.data.game.RegistryEntry;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
@@ -57,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Track game state.
@@ -83,6 +86,7 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
     public static final String MIN_Y_CODEC_TAG = "min_y";
     public static final String HEIGHT_CODEC_TAG = "height";
     public static final String DIMENSION_TYPE_CODEC_TAG = "minecraft:dimension_type";
+    public static final String BIOME_CODEC_TAG = "minecraft:worldgen/biome";
 
     public static final long WARN_WORLD_HEIGHT_UNKNOWN_PERIOD_LENGTH = 300L; // 5 minutes in seconds
 
@@ -109,6 +113,9 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
     private Map<String, Integer> registryOverrideHeightByDimension = new HashMap<>();
     private Map<String, Integer> registryOverrideMinYByDimension = new HashMap<>();
 
+    private static Supplier<NbtMap> lazyLoadNetworkCodec = GameStateTrackingPacketInterceptor::lazyLoadMinecraftProtocolNetworkCodec;
+    private static NbtMap minecraftProtocolNetworkCodec;
+    private static final Object networkCodecLock = new Object();
 
 //========================================
 // Constructors
@@ -328,6 +335,8 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
         if ((minY == null) || (height == null)) {
             try {
                 // Try loading the defaults just to confirm we have the dimension's data a little sooner than later.
+                //  Don't worry that we ignore the return value - this method is only looking for override values.
+                //  The correct values are determined later, when the player enters a dimension.
                 this.minecraftDatagenManager.readDimensionType(dimensionSimpleName);
             } catch (IOException ioExc) {
                 throw new RuntimeException("Updating dimension type data, but missing " + MIN_Y_CODEC_TAG + " and/or " + HEIGHT_CODEC_TAG + " values and defaults failed to load", ioExc);
@@ -403,6 +412,11 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
         try {
             List<ChunkSection> result = new LinkedList<>();
 
+            // Find the size of the block state "registry" and the BIOME registry.
+            int blockStateRegistrySize = this.countBlockStates();
+            int biomeRegistrySize = this.countBiomes();
+
+            // Get the bytes with the chunk section data from the packet.
             ByteBuf byteBuf = Unpooled.copiedBuffer(rawChunkData);
 
             int numSectionToRead = ( this.worldHeight / 16 ) + 1;
@@ -410,15 +424,19 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
             // Read until we have all of the sections for the chunk, or we run out of data from the server.
             int cur = 0;
             while ((cur < numSectionToRead) && (byteBuf.isReadable())) {
-                ChunkSection oneChunkSection = MinecraftTypes.readChunkSection(byteBuf);
+                ChunkSection oneChunkSection = MinecraftTypes.readChunkSection(byteBuf, blockStateRegistrySize, biomeRegistrySize);
 
                 result.add(oneChunkSection);
                 cur++;
             }
 
+            if (byteBuf.isReadable()) {
+                this.log.warn("parse chunks did not completely process all of the packet data");
+            }
+
             return result;
-        } catch (Exception ioExc) {
-            this.log.error("ERROR parsing chunk section data", ioExc);
+        } catch (Exception exc) {
+            this.log.error("ERROR parsing chunk section data", exc);
             return Collections.EMPTY_LIST;
         }
     }
@@ -448,5 +466,35 @@ public class GameStateTrackingPacketInterceptor implements PacketInterceptor, Ga
         }
 
         return true;
+    }
+
+    private int countBlockStates() throws IOException {
+        return this.minecraftDatagenManager.obtainBlockIdMapper().getBlockStateCount();
+    }
+
+    private int countBiomes() {
+        NbtMap codec = lazyLoadNetworkCodec.get();
+
+        if (codec == null) {
+            throw new RuntimeException("Unable to load MinecraftProtocol network codec");
+        }
+
+        NbtMap compound = codec.getCompound(BIOME_CODEC_TAG);
+        List<NbtMap> valueList = compound.getList("value", NbtType.COMPOUND);
+
+        return valueList.size();
+    }
+
+    private static NbtMap lazyLoadMinecraftProtocolNetworkCodec() {
+        if (GameStateTrackingPacketInterceptor.minecraftProtocolNetworkCodec == null) {
+            synchronized (GameStateTrackingPacketInterceptor.networkCodecLock) {
+                // Double-check it wasn't loaded by another thread in the mean time.
+                if (GameStateTrackingPacketInterceptor.minecraftProtocolNetworkCodec == null) {
+                    GameStateTrackingPacketInterceptor.minecraftProtocolNetworkCodec = MinecraftProtocol.loadNetworkCodec();
+                }
+            }
+        }
+
+        return GameStateTrackingPacketInterceptor.minecraftProtocolNetworkCodec;
     }
 }

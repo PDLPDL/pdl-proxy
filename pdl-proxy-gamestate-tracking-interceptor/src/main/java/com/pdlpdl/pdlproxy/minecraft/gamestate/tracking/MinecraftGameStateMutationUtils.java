@@ -58,6 +58,12 @@ public class MinecraftGameStateMutationUtils {
         return this.mutationUtils.mutateDeep(orig, mutator);
     }
 
+    public MinecraftGameState updatePlayerSneaking(MinecraftGameState orig, boolean updateIsSneaking) {
+        Mutator mutator = this.mutationUtils.makeAnchoredPathMutator((origIsOnGround) -> updateIsSneaking, MinecraftGameState.class, "playerIsSneaking");
+
+        return this.mutationUtils.mutateDeep(orig, mutator);
+    }
+
     /**
      * Update the player rotation in the given game state.
      *
@@ -268,7 +274,7 @@ public class MinecraftGameStateMutationUtils {
     }
 
 //========================================
-//
+// Player boolean state values
 //----------------------------------------
 
     /**

@@ -26,8 +26,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MinecraftDatagenManager {
 
-    public static final String DIMENSION_TYPE_SUBDIR = "dimension_type";
+    public static final String DIMENSION_TYPE_SUBDIR = "data/minecraft/dimension_type";
     public static final String DIMENSION_TYPE_LIST_RESOURCE = "dimension_type_list.json";
+
+    public static final String BLOCK_ID_SUBDIR = "reports";
+    public static final String BLOCK_ID_FILENAME = "blocks.json";
+    public static final String REGISTRIES_SUBDIR = "reports";
+    public static final String REGISTRIES_FILENAME = "registries.json";
 
     private static final Logger LOG = LoggerFactory.getLogger(MinecraftDatagenManager.class);
 
@@ -36,6 +41,8 @@ public class MinecraftDatagenManager {
     private String datagenFolderPath;
     private DatagenDimensionList datagenDimensionList;
 
+    private BlockIdMapper blockIdMapper;
+    private Object blockIdMapperLock = new Object();
     private Map<String, DatagenDimensionType> dimensionTypeMap = new ConcurrentHashMap<>();
 
 //========================================
@@ -70,6 +77,10 @@ public class MinecraftDatagenManager {
         for (String dimensionTypeName : this.datagenDimensionList) {
             this.loadDimensionType(dimensionTypeName);
         }
+
+        if (this.blockIdMapper == null) {
+            this.loadBlockIdMapper();
+        }
     }
 
 //========================================
@@ -84,6 +95,21 @@ public class MinecraftDatagenManager {
         }
 
         return this.dimensionTypeMap.get(dimensionName);
+    }
+
+    /**
+     * Obtain the blockIdMapper, initialing one now if not already done.
+     * RECOMMENDATION: use the preload() method to fail fast and load this data early.
+     *
+     * @return the blockIdMapper, if one was successfully initialized; null otherwise.
+     * @throws IOException if the blockIdMapper was not already loaded and there is an IOException on attemping to load it now.
+     */
+    public BlockIdMapper obtainBlockIdMapper() throws IOException {
+        if (this.blockIdMapper == null) {
+            this.loadBlockIdMapper();
+        }
+
+        return this.blockIdMapper;
     }
 
 //========================================
@@ -106,6 +132,29 @@ public class MinecraftDatagenManager {
             this.dimensionTypeMap.put(dimensionName, dimensionType);
 
             LOG.info("Loaded dimension type: dimension-name={}; dimension-type={}", dimensionName, dimensionType);
+        }
+    }
+
+    private void loadBlockIdMapper() throws IOException {
+        BlockIdMapper candidate = new BlockIdMapper();
+
+        synchronized (this.blockIdMapperLock) {
+            if (this.blockIdMapper != null) {
+                // This thread lost the race.  No need to load again.
+                return;
+            }
+
+            LOG.info("Loading block id file: filename={}/{}", BLOCK_ID_SUBDIR, BLOCK_ID_FILENAME);
+            try (InputStream blocksReportInputStream = this.openDataFileWithResourceFallback(BLOCK_ID_SUBDIR, BLOCK_ID_FILENAME)) {
+                candidate.loadBlocksReportFile(blocksReportInputStream);
+            }
+
+            LOG.info("Loading registries file: filename={}/{}", REGISTRIES_SUBDIR, REGISTRIES_FILENAME);
+            try (InputStream registriesReportInputStream = this.openDataFileWithResourceFallback(REGISTRIES_SUBDIR, REGISTRIES_FILENAME)) {
+                candidate.loadRegistriesFile(registriesReportInputStream);
+            }
+
+            this.blockIdMapper = candidate;
         }
     }
 

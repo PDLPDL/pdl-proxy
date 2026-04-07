@@ -10,6 +10,7 @@ import org.geysermc.mcprotocollib.protocol.packet.cookie.clientbound.*;
 import org.geysermc.mcprotocollib.protocol.packet.cookie.serverbound.*;
 import org.geysermc.mcprotocollib.protocol.packet.handshake.serverbound.*;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.*;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.debug.*;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.*;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.*;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.*;
@@ -32,6 +33,278 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class MinecraftPacketClassifierUtil {
+
+    private static final Set<Class<? extends Packet>> loginPacketSet = Set.of(
+        ClientboundLoginDisconnectPacket.class,
+        ClientboundHelloPacket.class,
+        ClientboundLoginFinishedPacket.class,
+        ClientboundLoginCompressionPacket.class,
+        ClientboundCustomQueryPacket.class,
+        ClientboundCookieRequestPacket.class,
+        ServerboundHelloPacket.class,
+        ServerboundKeyPacket.class,
+        ServerboundCustomQueryAnswerPacket.class,
+        ServerboundLoginAcknowledgedPacket.class,
+        ServerboundCookieResponsePacket.class
+    );
+
+
+    private static final Set<Class<? extends Packet>> statusPacketSet = Set.of(
+        ClientboundStatusResponsePacket.class,
+        ClientboundPongResponsePacket.class,
+        ServerboundStatusRequestPacket.class,
+        ServerboundPingRequestPacket.class
+    );
+
+    private static final Set<Class<? extends Packet>> configurationPacketSet = Set.of(
+        ClientboundClearDialogPacket.class,
+        ClientboundCodeOfConductPacket.class,
+        ClientboundCookieRequestPacket.class,
+        ClientboundCustomPayloadPacket.class,
+        ClientboundCustomReportDetailsPacket.class,
+        ClientboundDisconnectPacket.class,
+        ClientboundFinishConfigurationPacket.class,
+        ClientboundKeepAlivePacket.class,
+        ClientboundPingPacket.class,
+        ClientboundRecipeBookAddPacket.class,
+        ClientboundRecipeBookSettingsPacket.class,
+        ClientboundRegistryDataPacket.class,
+        ClientboundResetChatPacket.class,
+        ClientboundResourcePackPopPacket.class,
+        ClientboundResourcePackPushPacket.class,
+        ClientboundSelectKnownPacks.class,
+        ClientboundServerLinksPacket.class,
+        ClientboundShowDialogConfigurationPacket.class,
+        ClientboundStoreCookiePacket.class,
+        ClientboundTransferPacket.class,
+        ClientboundUpdateEnabledFeaturesPacket.class,
+        ClientboundUpdateTagsPacket.class,
+        ServerboundAcceptCodeOfConductPacket.class,
+        ServerboundClientInformationPacket.class,
+        ServerboundCookieResponsePacket.class,
+        ServerboundCustomClickActionPacket.class,
+        ServerboundCustomPayloadPacket.class,
+        ServerboundFinishConfigurationPacket.class,
+        ServerboundKeepAlivePacket.class,
+        ServerboundPongPacket.class,
+        ServerboundResourcePackPacket.class,
+        ServerboundSelectKnownPacks.class
+    );
+
+    private static final Set<Class<? extends Packet>> gamePacketSet = Set.of(
+        ClientboundDelimiterPacket.class,
+        ClientboundAddEntityPacket.class,
+        ClientboundAnimatePacket.class,
+        ClientboundAwardStatsPacket.class,
+        ClientboundBlockChangedAckPacket.class,
+        ClientboundBlockDestructionPacket.class,
+        ClientboundBlockEntityDataPacket.class,
+        ClientboundBlockEventPacket.class,
+        ClientboundBlockUpdatePacket.class,
+        ClientboundBossEventPacket.class,
+        ClientboundChangeDifficultyPacket.class,
+        ClientboundChunkBatchFinishedPacket.class,
+        ClientboundChunkBatchStartPacket.class,
+        ClientboundChunksBiomesPacket.class,
+        ClientboundClearTitlesPacket.class,
+        ClientboundCommandSuggestionsPacket.class,
+        ClientboundCommandsPacket.class,
+        ClientboundContainerClosePacket.class,
+        ClientboundContainerSetContentPacket.class,
+        ClientboundContainerSetDataPacket.class,
+        ClientboundContainerSetSlotPacket.class,
+        ClientboundCookieRequestPacket.class,
+        ClientboundCooldownPacket.class,
+        ClientboundCustomChatCompletionsPacket.class,
+        ClientboundCustomPayloadPacket.class,
+        ClientboundDamageEventPacket.class,
+        ClientboundDebugBlockValuePacket.class,
+        ClientboundDebugChunkValuePacket.class,
+        ClientboundDebugEntityValuePacket.class,
+        ClientboundDebugEventPacket.class,
+        ClientboundDebugSamplePacket.class,
+        ClientboundDeleteChatPacket.class,
+        ClientboundDisconnectPacket.class,
+        ClientboundDisguisedChatPacket.class,
+        ClientboundEntityEventPacket.class,
+        ClientboundEntityPositionSyncPacket.class,
+        ClientboundExplodePacket.class,
+        ClientboundForgetLevelChunkPacket.class,
+        ClientboundGameEventPacket.class,
+        ClientboundGameRuleValuesPacket.class,
+        ClientboundGameTestHighlightPosPacket.class,
+        ClientboundMountScreenOpenPacket.class,
+        ClientboundHurtAnimationPacket.class,
+        ClientboundInitializeBorderPacket.class,
+        ClientboundKeepAlivePacket.class,
+        ClientboundLevelChunkWithLightPacket.class,
+        ClientboundLevelEventPacket.class,
+        ClientboundLevelParticlesPacket.class,
+        ClientboundLightUpdatePacket.class,
+        ClientboundLoginPacket.class,
+        ClientboundLowDiskSpaceWarningPacket.class,
+        ClientboundMapItemDataPacket.class,
+        ClientboundMerchantOffersPacket.class,
+        ClientboundMoveEntityPosPacket.class,
+        ClientboundMoveEntityPosRotPacket.class,
+        ClientboundMoveMinecartPacket.class,
+        ClientboundMoveEntityRotPacket.class,
+        ClientboundMoveVehiclePacket.class,
+        ClientboundOpenBookPacket.class,
+        ClientboundOpenScreenPacket.class,
+        ClientboundOpenSignEditorPacket.class,
+        ClientboundPingPacket.class,
+        ClientboundPongResponsePacket.class,
+        ClientboundPlaceGhostRecipePacket.class,
+        ClientboundPlayerAbilitiesPacket.class,
+        ClientboundPlayerChatPacket.class,
+        ClientboundPlayerCombatEndPacket.class,
+        ClientboundPlayerCombatEnterPacket.class,
+        ClientboundPlayerCombatKillPacket.class,
+        ClientboundPlayerInfoRemovePacket.class,
+        ClientboundPlayerInfoUpdatePacket.class,
+        ClientboundPlayerLookAtPacket.class,
+        ClientboundPlayerPositionPacket.class,
+        ClientboundPlayerRotationPacket.class,
+        ClientboundRecipeBookAddPacket.class,
+        ClientboundRecipeBookRemovePacket.class,
+        ClientboundRecipeBookSettingsPacket.class,
+        ClientboundRemoveEntitiesPacket.class,
+        ClientboundRemoveMobEffectPacket.class,
+        ClientboundResetScorePacket.class,
+        ClientboundResourcePackPopPacket.class,
+        ClientboundResourcePackPushPacket.class,
+        ClientboundRespawnPacket.class,
+        ClientboundRotateHeadPacket.class,
+        ClientboundSectionBlocksUpdatePacket.class,
+        ClientboundSelectAdvancementsTabPacket.class,
+        ClientboundServerDataPacket.class,
+        ClientboundSetActionBarTextPacket.class,
+        ClientboundSetBorderCenterPacket.class,
+        ClientboundSetBorderLerpSizePacket.class,
+        ClientboundSetBorderSizePacket.class,
+        ClientboundSetBorderWarningDelayPacket.class,
+        ClientboundSetBorderWarningDistancePacket.class,
+        ClientboundSetCameraPacket.class,
+        ClientboundSetChunkCacheCenterPacket.class,
+        ClientboundSetChunkCacheRadiusPacket.class,
+        ClientboundSetCursorItemPacket.class,
+        ClientboundSetDefaultSpawnPositionPacket.class,
+        ClientboundSetDisplayObjectivePacket.class,
+        ClientboundSetEntityDataPacket.class,
+        ClientboundSetEntityLinkPacket.class,
+        ClientboundSetEntityMotionPacket.class,
+        ClientboundSetEquipmentPacket.class,
+        ClientboundSetExperiencePacket.class,
+        ClientboundSetHealthPacket.class,
+        ClientboundSetHeldSlotPacket.class,
+        ClientboundSetObjectivePacket.class,
+        ClientboundSetPassengersPacket.class,
+        ClientboundSetPlayerInventoryPacket.class,
+        ClientboundSetPlayerTeamPacket.class,
+        ClientboundSetScorePacket.class,
+        ClientboundSetSimulationDistancePacket.class,
+        ClientboundSetSubtitleTextPacket.class,
+        ClientboundSetTimePacket.class,
+        ClientboundSetTitleTextPacket.class,
+        ClientboundSetTitlesAnimationPacket.class,
+        ClientboundSoundEntityPacket.class,
+        ClientboundSoundPacket.class,
+        ClientboundStartConfigurationPacket.class,
+        ClientboundStopSoundPacket.class,
+        ClientboundStoreCookiePacket.class,
+        ClientboundSystemChatPacket.class,
+        ClientboundTabListPacket.class,
+        ClientboundTagQueryPacket.class,
+        ClientboundTakeItemEntityPacket.class,
+        ClientboundTeleportEntityPacket.class,
+        ClientboundTestInstanceBlockStatus.class,
+        ClientboundTickingStatePacket.class,
+        ClientboundTickingStepPacket.class,
+        ClientboundTransferPacket.class,
+        ClientboundUpdateAdvancementsPacket.class,
+        ClientboundUpdateAttributesPacket.class,
+        ClientboundUpdateMobEffectPacket.class,
+        ClientboundUpdateRecipesPacket.class,
+        ClientboundUpdateTagsPacket.class,
+        ClientboundProjectilePowerPacket.class,
+        ClientboundCustomReportDetailsPacket.class,
+        ClientboundServerLinksPacket.class,
+        ClientboundTrackedWaypointPacket.class,
+        ClientboundClearDialogPacket.class,
+        ClientboundShowDialogGamePacket.class,
+        ServerboundAttackPacket.class,
+        ServerboundAcceptTeleportationPacket.class,
+        ServerboundBlockEntityTagQueryPacket.class,
+        ServerboundSelectBundleItemPacket.class,
+        ServerboundChangeDifficultyPacket.class,
+        ServerboundChangeGameModePacket.class,
+        ServerboundChatAckPacket.class,
+        ServerboundChatCommandPacket.class,
+        ServerboundChatCommandSignedPacket.class,
+        ServerboundChatPacket.class,
+        ServerboundChatSessionUpdatePacket.class,
+        ServerboundChunkBatchReceivedPacket.class,
+        ServerboundClientCommandPacket.class,
+        ServerboundClientTickEndPacket.class,
+        ServerboundClientInformationPacket.class,
+        ServerboundCommandSuggestionPacket.class,
+        ServerboundConfigurationAcknowledgedPacket.class,
+        ServerboundContainerButtonClickPacket.class,
+        ServerboundContainerClickPacket.class,
+        ServerboundContainerClosePacket.class,
+        ServerboundContainerSlotStateChangedPacket.class,
+        ServerboundCookieResponsePacket.class,
+        ServerboundCustomPayloadPacket.class,
+        ServerboundDebugSubscriptionRequestPacket.class,
+        ServerboundEditBookPacket.class,
+        ServerboundEntityTagQuery.class,
+        ServerboundInteractPacket.class,
+        ServerboundJigsawGeneratePacket.class,
+        ServerboundKeepAlivePacket.class,
+        ServerboundLockDifficultyPacket.class,
+        ServerboundMovePlayerPosPacket.class,
+        ServerboundMovePlayerPosRotPacket.class,
+        ServerboundMovePlayerRotPacket.class,
+        ServerboundMovePlayerStatusOnlyPacket.class,
+        ServerboundMoveVehiclePacket.class,
+        ServerboundPaddleBoatPacket.class,
+        ServerboundPickItemFromBlockPacket.class,
+        ServerboundPickItemFromEntityPacket.class,
+        ServerboundPingRequestPacket.class,
+        ServerboundPlaceRecipePacket.class,
+        ServerboundPlayerAbilitiesPacket.class,
+        ServerboundPlayerActionPacket.class,
+        ServerboundPlayerCommandPacket.class,
+        ServerboundPlayerInputPacket.class,
+        ServerboundPlayerLoadedPacket.class,
+        ServerboundPongPacket.class,
+        ServerboundRecipeBookChangeSettingsPacket.class,
+        ServerboundRecipeBookSeenRecipePacket.class,
+        ServerboundRenameItemPacket.class,
+        ServerboundResourcePackPacket.class,
+        ServerboundSeenAdvancementsPacket.class,
+        ServerboundSelectTradePacket.class,
+        ServerboundSetBeaconPacket.class,
+        ServerboundSetCarriedItemPacket.class,
+        ServerboundSetCommandBlockPacket.class,
+        ServerboundSetCommandMinecartPacket.class,
+        ServerboundSetCreativeModeSlotPacket.class,
+        ServerboundSetGameRulePacket.class,
+        ServerboundSetJigsawBlockPacket.class,
+        ServerboundSetStructureBlockPacket.class,
+        ServerboundSetTestBlockPacket.class,
+        ServerboundSignUpdatePacket.class,
+        ServerboundSpectateEntityPacket.class,
+        ServerboundSwingPacket.class,
+        ServerboundTeleportToEntityPacket.class,
+        ServerboundTestInstanceBlockActionPacket.class,
+        ServerboundUseItemOnPacket.class,
+        ServerboundUseItemPacket.class,
+        ServerboundCustomClickActionPacket.class
+    );
+
+
     /**
      * Currently only used for logging.
      *
@@ -41,32 +314,7 @@ public class MinecraftPacketClassifierUtil {
      * @return true => if the packet is a valid CONFIGURATION packet; false => otherwise.
      */
     public boolean isConfigurationPacket(Packet packet) {
-        return (
-            (packet instanceof ClientboundCookieRequestPacket) ||
-                (packet instanceof ClientboundCustomPayloadPacket) ||   // NOTE can also be sent in GAME mode
-                (packet instanceof ClientboundDisconnectPacket) ||
-                (packet instanceof ClientboundFinishConfigurationPacket) ||
-                (packet instanceof ClientboundRegistryDataPacket) ||
-                (packet instanceof ClientboundResourcePackPopPacket) ||
-                (packet instanceof ClientboundResourcePackPushPacket) ||
-                (packet instanceof ClientboundStoreCookiePacket) ||
-                (packet instanceof ClientboundTransferPacket) ||
-                (packet instanceof ClientboundUpdateEnabledFeaturesPacket) ||
-                (packet instanceof ClientboundUpdateTagsPacket) ||
-                (packet instanceof ClientboundSelectKnownPacks) ||
-                (packet instanceof ClientboundCustomReportDetailsPacket) ||
-                (packet instanceof ClientboundServerLinksPacket) ||
-                (packet instanceof ClientboundRecipeBookSettingsPacket) ||
-                (packet instanceof ClientboundRecipeBookAddPacket) ||
-                (packet instanceof ServerboundClientInformationPacket) ||
-                (packet instanceof ServerboundCookieResponsePacket) ||
-                (packet instanceof ServerboundCustomPayloadPacket) ||
-                (packet instanceof ServerboundFinishConfigurationPacket) ||
-                (packet instanceof ServerboundKeepAlivePacket) ||
-                (packet instanceof ServerboundPongPacket) ||
-                (packet instanceof ServerboundResourcePackPacket) ||
-                (packet instanceof ServerboundSelectKnownPacks)
-        );
+        return (MinecraftPacketClassifierUtil.configurationPacketSet.contains(packet.getClass()));
     }
 
     /**
@@ -77,256 +325,26 @@ public class MinecraftPacketClassifierUtil {
      */
     public Set<ProtocolState> getValidProtocolStateSetForPacket(Packet packet) {
         Set<ProtocolState> result = new HashSet<>();
+        Class<? extends Packet> clazz = packet.getClass();
 
+        // Don't bother with a set for this one.
         if (packet instanceof ClientIntentionPacket) {
             result.add(ProtocolState.HANDSHAKE);
         }
 
-        if ((packet instanceof ClientboundLoginDisconnectPacket) ||
-            (packet instanceof ClientboundHelloPacket) ||
-            (packet instanceof ClientboundLoginFinishedPacket) ||
-            (packet instanceof ClientboundLoginCompressionPacket) ||
-            (packet instanceof ClientboundCustomQueryPacket) ||
-            (packet instanceof ClientboundCookieRequestPacket) ||
-            (packet instanceof ServerboundHelloPacket) ||
-            (packet instanceof ServerboundKeyPacket) ||
-            (packet instanceof ServerboundCustomQueryAnswerPacket) ||
-            (packet instanceof ServerboundLoginAcknowledgedPacket) ||
-            (packet instanceof ServerboundCookieResponsePacket)) {
+        if (MinecraftPacketClassifierUtil.loginPacketSet.contains(clazz)) {
             result.add(ProtocolState.LOGIN);
         }
 
-        if ((packet instanceof ClientboundStatusResponsePacket) ||
-            (packet instanceof ClientboundPongResponsePacket) ||
-            (packet instanceof ServerboundStatusRequestPacket) ||
-            (packet instanceof ServerboundPingRequestPacket)) {
+        if (MinecraftPacketClassifierUtil.statusPacketSet.contains(clazz)) {
             result.add(ProtocolState.STATUS);
         }
 
-        if ((packet instanceof ClientboundCookieRequestPacket) ||
-            (packet instanceof ClientboundCustomPayloadPacket) ||
-            (packet instanceof ClientboundDisconnectPacket) ||
-            (packet instanceof ClientboundFinishConfigurationPacket) ||
-            (packet instanceof ClientboundKeepAlivePacket) ||
-            (packet instanceof ClientboundPingPacket) ||
-            (packet instanceof ClientboundResetChatPacket) ||
-            (packet instanceof ClientboundRegistryDataPacket) ||
-            (packet instanceof ClientboundResourcePackPopPacket) ||
-            (packet instanceof ClientboundResourcePackPushPacket) ||
-            (packet instanceof ClientboundStoreCookiePacket) ||
-            (packet instanceof ClientboundTransferPacket) ||
-            (packet instanceof ClientboundUpdateEnabledFeaturesPacket) ||
-            (packet instanceof ClientboundUpdateTagsPacket) ||
-            (packet instanceof ClientboundSelectKnownPacks) ||
-            (packet instanceof ClientboundCustomReportDetailsPacket) ||
-            (packet instanceof ClientboundServerLinksPacket) ||
-            (packet instanceof ServerboundClientInformationPacket) ||
-            (packet instanceof ServerboundCookieResponsePacket) ||
-            (packet instanceof ServerboundCustomPayloadPacket) ||
-            (packet instanceof ServerboundFinishConfigurationPacket) ||
-            (packet instanceof ServerboundKeepAlivePacket) ||
-            (packet instanceof ServerboundPongPacket) ||
-            (packet instanceof ServerboundResourcePackPacket) ||
-            (packet instanceof ServerboundSelectKnownPacks)
-        ) {
+        if (MinecraftPacketClassifierUtil.configurationPacketSet.contains(clazz)) {
             result.add(ProtocolState.CONFIGURATION);
         }
 
-        if ((packet instanceof ClientboundDelimiterPacket) ||
-            (packet instanceof ClientboundAddEntityPacket) ||
-            (packet instanceof ClientboundAnimatePacket) ||
-            (packet instanceof ClientboundAwardStatsPacket) ||
-            (packet instanceof ClientboundBlockChangedAckPacket) ||
-            (packet instanceof ClientboundBlockDestructionPacket) ||
-            (packet instanceof ClientboundBlockEntityDataPacket) ||
-            (packet instanceof ClientboundBlockEventPacket) ||
-            (packet instanceof ClientboundBlockUpdatePacket) ||
-            (packet instanceof ClientboundBossEventPacket) ||
-            (packet instanceof ClientboundChangeDifficultyPacket) ||
-            (packet instanceof ClientboundChunkBatchFinishedPacket) ||
-            (packet instanceof ClientboundChunkBatchStartPacket) ||
-            (packet instanceof ClientboundChunksBiomesPacket) ||
-            (packet instanceof ClientboundClearTitlesPacket) ||
-            (packet instanceof ClientboundCommandSuggestionsPacket) ||
-            (packet instanceof ClientboundCommandsPacket) ||
-            (packet instanceof ClientboundContainerClosePacket) ||
-            (packet instanceof ClientboundContainerSetContentPacket) ||
-            (packet instanceof ClientboundContainerSetDataPacket) ||
-            (packet instanceof ClientboundContainerSetSlotPacket) ||
-            (packet instanceof ClientboundCookieRequestPacket) ||
-            (packet instanceof ClientboundCooldownPacket) ||
-            (packet instanceof ClientboundCustomChatCompletionsPacket) ||
-            (packet instanceof ClientboundCustomPayloadPacket) ||
-            (packet instanceof ClientboundDamageEventPacket) ||
-            (packet instanceof ClientboundDebugSamplePacket) ||
-            (packet instanceof ClientboundDeleteChatPacket) ||
-            (packet instanceof ClientboundDisconnectPacket) ||
-            (packet instanceof ClientboundDisguisedChatPacket) ||
-            (packet instanceof ClientboundEntityEventPacket) ||
-            (packet instanceof ClientboundEntityPositionSyncPacket) ||
-            (packet instanceof ClientboundExplodePacket) ||
-            (packet instanceof ClientboundForgetLevelChunkPacket) ||
-            (packet instanceof ClientboundGameEventPacket) ||
-            (packet instanceof ClientboundHorseScreenOpenPacket) ||
-            (packet instanceof ClientboundHurtAnimationPacket) ||
-            (packet instanceof ClientboundInitializeBorderPacket) ||
-            (packet instanceof ClientboundKeepAlivePacket) ||
-            (packet instanceof ClientboundLevelChunkWithLightPacket) ||
-            (packet instanceof ClientboundLevelEventPacket) ||
-            (packet instanceof ClientboundLevelParticlesPacket) ||
-            (packet instanceof ClientboundLightUpdatePacket) ||
-            (packet instanceof ClientboundLoginPacket) ||
-            (packet instanceof ClientboundMapItemDataPacket) ||
-            (packet instanceof ClientboundMerchantOffersPacket) ||
-            (packet instanceof ClientboundMoveEntityPosPacket) ||
-            (packet instanceof ClientboundMoveEntityPosRotPacket) ||
-            (packet instanceof ClientboundMoveMinecartPacket) ||
-            (packet instanceof ClientboundMoveEntityRotPacket) ||
-            (packet instanceof ClientboundMoveVehiclePacket) ||
-            (packet instanceof ClientboundOpenBookPacket) ||
-            (packet instanceof ClientboundOpenScreenPacket) ||
-            (packet instanceof ClientboundOpenSignEditorPacket) ||
-            (packet instanceof ClientboundPingPacket) ||
-            (packet instanceof ClientboundPongResponsePacket) ||
-            (packet instanceof ClientboundPlaceGhostRecipePacket) ||
-            (packet instanceof ClientboundPlayerAbilitiesPacket) ||
-            (packet instanceof ClientboundPlayerChatPacket) ||
-            (packet instanceof ClientboundPlayerCombatEndPacket) ||
-            (packet instanceof ClientboundPlayerCombatEnterPacket) ||
-            (packet instanceof ClientboundPlayerCombatKillPacket) ||
-            (packet instanceof ClientboundPlayerInfoRemovePacket) ||
-            (packet instanceof ClientboundPlayerInfoUpdatePacket) ||
-            (packet instanceof ClientboundPlayerLookAtPacket) ||
-            (packet instanceof ClientboundPlayerPositionPacket) ||
-            (packet instanceof ClientboundPlayerRotationPacket) ||
-            (packet instanceof ClientboundRecipeBookAddPacket) ||
-            (packet instanceof ClientboundRecipeBookRemovePacket) ||
-            (packet instanceof ClientboundRecipeBookSettingsPacket) ||
-            (packet instanceof ClientboundRemoveEntitiesPacket) ||
-            (packet instanceof ClientboundRemoveMobEffectPacket) ||
-            (packet instanceof ClientboundResetScorePacket) ||
-            (packet instanceof ClientboundResourcePackPopPacket) ||
-            (packet instanceof ClientboundResourcePackPushPacket) ||
-            (packet instanceof ClientboundRespawnPacket) ||
-            (packet instanceof ClientboundRotateHeadPacket) ||
-            (packet instanceof ClientboundSectionBlocksUpdatePacket) ||
-            (packet instanceof ClientboundSelectAdvancementsTabPacket) ||
-            (packet instanceof ClientboundServerDataPacket) ||
-            (packet instanceof ClientboundSetActionBarTextPacket) ||
-            (packet instanceof ClientboundSetBorderCenterPacket) ||
-            (packet instanceof ClientboundSetBorderLerpSizePacket) ||
-            (packet instanceof ClientboundSetBorderSizePacket) ||
-            (packet instanceof ClientboundSetBorderWarningDelayPacket) ||
-            (packet instanceof ClientboundSetBorderWarningDistancePacket) ||
-            (packet instanceof ClientboundSetCameraPacket) ||
-            (packet instanceof ClientboundSetChunkCacheCenterPacket) ||
-            (packet instanceof ClientboundSetChunkCacheRadiusPacket) ||
-            (packet instanceof ClientboundSetCursorItemPacket) ||
-            (packet instanceof ClientboundSetDefaultSpawnPositionPacket) ||
-            (packet instanceof ClientboundSetDisplayObjectivePacket) ||
-            (packet instanceof ClientboundSetEntityDataPacket) ||
-            (packet instanceof ClientboundSetEntityLinkPacket) ||
-            (packet instanceof ClientboundSetEntityMotionPacket) ||
-            (packet instanceof ClientboundSetEquipmentPacket) ||
-            (packet instanceof ClientboundSetExperiencePacket) ||
-            (packet instanceof ClientboundSetHealthPacket) ||
-            (packet instanceof ClientboundSetHeldSlotPacket) ||
-            (packet instanceof ClientboundSetObjectivePacket) ||
-            (packet instanceof ClientboundSetPassengersPacket) ||
-            (packet instanceof ClientboundSetPlayerInventoryPacket) ||
-            (packet instanceof ClientboundSetPlayerTeamPacket) ||
-            (packet instanceof ClientboundSetScorePacket) ||
-            (packet instanceof ClientboundSetSimulationDistancePacket) ||
-            (packet instanceof ClientboundSetSubtitleTextPacket) ||
-            (packet instanceof ClientboundSetTimePacket) ||
-            (packet instanceof ClientboundSetTitleTextPacket) ||
-            (packet instanceof ClientboundSetTitlesAnimationPacket) ||
-            (packet instanceof ClientboundSoundEntityPacket) ||
-            (packet instanceof ClientboundSoundPacket) ||
-            (packet instanceof ClientboundStartConfigurationPacket) ||
-            (packet instanceof ClientboundStopSoundPacket) ||
-            (packet instanceof ClientboundStoreCookiePacket) ||
-            (packet instanceof ClientboundSystemChatPacket) ||
-            (packet instanceof ClientboundTabListPacket) ||
-            (packet instanceof ClientboundTagQueryPacket) ||
-            (packet instanceof ClientboundTakeItemEntityPacket) ||
-            (packet instanceof ClientboundTeleportEntityPacket) ||
-            (packet instanceof ClientboundTestInstanceBlockStatus) ||
-            (packet instanceof ClientboundTickingStatePacket) ||
-            (packet instanceof ClientboundTickingStepPacket) ||
-            (packet instanceof ClientboundTransferPacket) ||
-            (packet instanceof ClientboundUpdateAdvancementsPacket) ||
-            (packet instanceof ClientboundUpdateAttributesPacket) ||
-            (packet instanceof ClientboundUpdateMobEffectPacket) ||
-            (packet instanceof ClientboundUpdateRecipesPacket) ||
-            (packet instanceof ClientboundUpdateTagsPacket) ||
-            (packet instanceof ClientboundProjectilePowerPacket) ||
-            (packet instanceof ClientboundCustomReportDetailsPacket) ||
-            (packet instanceof ClientboundServerLinksPacket) ||
-            (packet instanceof ServerboundAcceptTeleportationPacket) ||
-            (packet instanceof ServerboundBlockEntityTagQueryPacket) ||
-            (packet instanceof ServerboundSelectBundleItemPacket) ||
-            (packet instanceof ServerboundChangeDifficultyPacket) ||
-            (packet instanceof ServerboundChatAckPacket) ||
-            (packet instanceof ServerboundChatCommandPacket) ||
-            (packet instanceof ServerboundChatCommandSignedPacket) ||
-            (packet instanceof ServerboundChatPacket) ||
-            (packet instanceof ServerboundChatSessionUpdatePacket) ||
-            (packet instanceof ServerboundChunkBatchReceivedPacket) ||
-            (packet instanceof ServerboundClientCommandPacket) ||
-            (packet instanceof ServerboundClientTickEndPacket) ||
-            (packet instanceof ServerboundClientInformationPacket) ||
-            (packet instanceof ServerboundCommandSuggestionPacket) ||
-            (packet instanceof ServerboundConfigurationAcknowledgedPacket) ||
-            (packet instanceof ServerboundContainerButtonClickPacket) ||
-            (packet instanceof ServerboundContainerClickPacket) ||
-            (packet instanceof ServerboundContainerClosePacket) ||
-            (packet instanceof ServerboundContainerSlotStateChangedPacket) ||
-            (packet instanceof ServerboundCookieResponsePacket) ||
-            (packet instanceof ServerboundCustomPayloadPacket) ||
-            (packet instanceof ServerboundDebugSampleSubscriptionPacket) ||
-            (packet instanceof ServerboundEditBookPacket) ||
-            (packet instanceof ServerboundEntityTagQuery) ||
-            (packet instanceof ServerboundInteractPacket) ||
-            (packet instanceof ServerboundJigsawGeneratePacket) ||
-            (packet instanceof ServerboundKeepAlivePacket) ||
-            (packet instanceof ServerboundLockDifficultyPacket) ||
-            (packet instanceof ServerboundMovePlayerPosPacket) ||
-            (packet instanceof ServerboundMovePlayerPosRotPacket) ||
-            (packet instanceof ServerboundMovePlayerRotPacket) ||
-            (packet instanceof ServerboundMovePlayerStatusOnlyPacket) ||
-            (packet instanceof ServerboundMoveVehiclePacket) ||
-            (packet instanceof ServerboundPaddleBoatPacket) ||
-            (packet instanceof ServerboundPickItemFromBlockPacket) ||
-            (packet instanceof ServerboundPickItemFromEntityPacket) ||
-            (packet instanceof ServerboundPingRequestPacket) ||
-            (packet instanceof ServerboundPlaceRecipePacket) ||
-            (packet instanceof ServerboundPlayerAbilitiesPacket) ||
-            (packet instanceof ServerboundPlayerActionPacket) ||
-            (packet instanceof ServerboundPlayerCommandPacket) ||
-            (packet instanceof ServerboundPlayerInputPacket) ||
-            (packet instanceof ServerboundPlayerLoadedPacket) ||
-            (packet instanceof ServerboundPongPacket) ||
-            (packet instanceof ServerboundRecipeBookChangeSettingsPacket) ||
-            (packet instanceof ServerboundRecipeBookSeenRecipePacket) ||
-            (packet instanceof ServerboundRenameItemPacket) ||
-            (packet instanceof ServerboundResourcePackPacket) ||
-            (packet instanceof ServerboundSeenAdvancementsPacket) ||
-            (packet instanceof ServerboundSelectTradePacket) ||
-            (packet instanceof ServerboundSetBeaconPacket) ||
-            (packet instanceof ServerboundSetCarriedItemPacket) ||
-            (packet instanceof ServerboundSetCommandBlockPacket) ||
-            (packet instanceof ServerboundSetCommandMinecartPacket) ||
-            (packet instanceof ServerboundSetCreativeModeSlotPacket) ||
-            (packet instanceof ServerboundSetJigsawBlockPacket) ||
-            (packet instanceof ServerboundSetStructureBlockPacket) ||
-            (packet instanceof ServerboundSetTestBlockPacket) ||
-            (packet instanceof ServerboundSignUpdatePacket) ||
-            (packet instanceof ServerboundSwingPacket) ||
-            (packet instanceof ServerboundTeleportToEntityPacket) ||
-            (packet instanceof ServerboundTestInstanceBlockActionPacket) ||
-            (packet instanceof ServerboundUseItemOnPacket) ||
-            (packet instanceof ServerboundUseItemPacket)) {
+        if (MinecraftPacketClassifierUtil.gamePacketSet.contains(clazz)) {
             result.add(ProtocolState.GAME);
         }
 

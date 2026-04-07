@@ -83,3 +83,27 @@ Server without modifying the Server.
                 session.enableEncryption(protocol.enableEncryption(key));
 
 	  And then 1.18-2 fixed it.
+
+
+## Maintaining Minecraft Registries (aka Datagen)
+
+Three ways registry data is loaded:
+1. Directly from packets (limited - most are not loaded this way)
+2. From external files
+3. From resources built-in to the project.
+
+On every new Minecraft version, make sure to update the resources built-in to the project:
+* Under this directory: `pdl-proxy-gamestate-tracking-interceptor/src/main/resources/com/pdlpdl/pdlproxy/minecraft/gamestate/datagen`
+* Make sure to update the version number here or the build will fail: `pdl-proxy-gamestate-tracking-interceptor/src/main/resources/com/pdlpdl/pdlproxy/minecraft/gamestate/datagen/datagen-version.txt`
+
+Replace the files with copies from the server.  They can be generated with the following command:
+
+    java -DbundlerMainClass="net.minecraft.data.Main" -jar minecraft-server.jar --all --output dir
+
+### Checklist
+* [ ] Update the files in the `datagen` resources folder with copies generated from the matching server version.
+* [ ] If new dimension types are added to the server:
+  * [ ] Update the file `dimension_type_list.json`
+  * [ ] Add a new file using the naming pattern `<dimension-type>.json` to the `dimension_type` resources directory;
+  * **note** the dimension type name must match between the value in `dimension_type_list.json` and the filename.
+* [ ] Update the `datagen-version.txt` file.

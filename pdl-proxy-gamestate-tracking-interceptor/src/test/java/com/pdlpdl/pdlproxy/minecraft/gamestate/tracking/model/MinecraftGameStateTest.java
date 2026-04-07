@@ -25,6 +25,7 @@ public class MinecraftGameStateTest {
                 13,
                 new Position(1.0, 2.0, 3.0),
                 true,
+                false,
                 new Rotation(180.0, -90.0, 0.0),
                 20.0f,
                 0f,

@@ -11,6 +11,7 @@ import java.util.HashMap;
                 "playerEntityId",
                 "playerPosition",
                 "playerIsOnGround",
+                "playerIsSneaking",
                 "playerRotation",
                 "playerHealth",
                 "playerSaturation",
@@ -18,13 +19,14 @@ import java.util.HashMap;
                 "minecraftWorldBlockState"
         })
 public class MinecraftGameState {
-    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState("unknown", "", -1, null, true, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>(), 0));
+    public static final MinecraftGameState INITIAL_GAME_STATE = new MinecraftGameState("unknown", "", -1, null, true, false, null, 20.0f, 0f, 20, new MinecraftWorldBlockState(new HashMap<>(), 0));
 
     private final String playerName;
     private final String playerId;  // UUID
     private final int playerEntityId;
     private final Position playerPosition;
     private final boolean playerIsOnGround;
+    private final boolean playerIsSneaking;
     private final Rotation playerRotation;
 
     private final float playerHealth;
@@ -39,6 +41,7 @@ public class MinecraftGameState {
             int playerEntityId,
             Position playerPosition,
             boolean playerIsOnGround,
+            boolean playerIsSneaking,
             Rotation playerRotation,
             float playerHealth,
             float playerSaturation,
@@ -51,6 +54,7 @@ public class MinecraftGameState {
         this.playerEntityId   = playerEntityId;
         this.playerPosition   = playerPosition;
         this.playerIsOnGround = playerIsOnGround;
+        this.playerIsSneaking = playerIsSneaking;
         this.playerRotation   = playerRotation;
         this.playerHealth     = playerHealth;
         this.playerSaturation = playerSaturation;
@@ -83,6 +87,10 @@ public class MinecraftGameState {
         return playerIsOnGround;
     }
 
+    public boolean getPlayerIsSneaking() {
+        return playerIsSneaking;
+    }
+
     public Rotation getPlayerRotation() {
         return playerRotation;
     }
@@ -109,6 +117,7 @@ public class MinecraftGameState {
                 "playerEntityId=" + this.playerEntityId +
                 ", playerPosition=" + this.playerPosition +
                 ", playerIsOnGround=" + this.playerIsOnGround +
+                ", playerIsSneaking=" + this.playerIsSneaking +
                 ", playerRotation=" + this.playerRotation +
                 ", playerHealth=" + this.playerHealth +
                 ", playerSaturation=" + this.playerSaturation +

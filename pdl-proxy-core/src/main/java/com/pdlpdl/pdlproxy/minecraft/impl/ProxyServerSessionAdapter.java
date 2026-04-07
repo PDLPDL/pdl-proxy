@@ -32,8 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.function.BiConsumer;
 
 /**
- * SessionListener for upstream Client connections that forwards packets to the downstream server after initiating the
- * downstream connection on login success.
+ * SessionListener for downstream server connections that forwards packets to the upstream client.
  */
 public class ProxyServerSessionAdapter implements SessionListener {
 

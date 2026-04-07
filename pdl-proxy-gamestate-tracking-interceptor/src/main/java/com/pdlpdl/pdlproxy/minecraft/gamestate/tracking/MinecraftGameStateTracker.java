@@ -64,6 +64,12 @@ public class MinecraftGameStateTracker {
                         .updatePlayerPosition(this.minecraftGameState, updatedPosition, updatedIsOnGround));
     }
 
+    public MinecraftGameState updatePlayerSneaking(boolean updatedIsSneaking) {
+        return this.updateCommon(
+                () -> this.minecraftGameStateMutationUtils
+                    .updatePlayerSneaking(this.minecraftGameState, updatedIsSneaking));
+    }
+
     public MinecraftGameState updatePlayerRotation(Rotation updatedRotation, Boolean updatedIsOnGround) {
         return this.updateCommon(
                 () -> this.minecraftGameStateMutationUtils
@@ -152,7 +158,8 @@ public class MinecraftGameStateTracker {
         ImmutableChunkSectionFacade[] result =
                 chunkSections
                         .stream()
-                        .map((oneChunkSection) -> new ImmutableChunkSectionFacade(oneChunkSection.getChunkData(), oneChunkSection.getBiomeData()))
+                        // TBD888: chunk section now has a block count; do we want to use it?
+                        .map((oneChunkSection) -> new ImmutableChunkSectionFacade(oneChunkSection.getBlockData(), oneChunkSection.getBiomeData()))
                         .toArray(ImmutableChunkSectionFacade[]::new);
 
         return result;
